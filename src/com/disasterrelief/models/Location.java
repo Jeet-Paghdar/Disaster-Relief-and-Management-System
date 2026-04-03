@@ -2,6 +2,8 @@ package com.disasterrelief.models;
 
 public class Location {
 
+    private static final String[] VALID_TYPES = {"Hospital", "Shelter", "Supply Center", "Medical Camp", "Relief Center"};
+    
     private int locationId;
     private String name;
     private String address;
@@ -13,7 +15,7 @@ public class Location {
 
     public Location(int locationId, String name, String address,
                     String type, String pincode, int capacity) {
-        this.locationId = locationId;
+        setLocationId(locationId);
         setName(name);
         setAddress(address);
         setType(type);
@@ -22,7 +24,11 @@ public class Location {
     }
 
     public int getLocationId() { return locationId; }
-    public void setLocationId(int locationId) { this.locationId = locationId; }
+    public void setLocationId(int locationId) {
+        if (locationId <= 0)
+            throw new IllegalArgumentException("Location ID must be a positive integer");
+        this.locationId = locationId;
+    }
 
     public String getName() { return name; }
     public void setName(String name) {
@@ -42,20 +48,33 @@ public class Location {
     public void setType(String type) {
         if (type == null || type.isBlank())
             throw new IllegalArgumentException("Type cannot be empty");
-        this.type = type.trim();
+        String trimmedType = type.trim();
+        boolean isValid = false;
+        for (String valid : VALID_TYPES) {
+            if (valid.equals(trimmedType)) {
+                isValid = true;
+                break;
+            }
+        }
+        if (!isValid)
+            throw new IllegalArgumentException("Type must be one of: Hospital, Shelter, Supply Center, Medical Camp, Relief Center");
+        this.type = trimmedType;
     }
 
     public String getPincode() { return pincode; }
     public void setPincode(String pincode) {
         if (pincode == null || pincode.isBlank())
             throw new IllegalArgumentException("Pincode cannot be empty");
-        this.pincode = pincode.trim();
+        String trimmedPincode = pincode.trim();
+        if (!trimmedPincode.matches("\\d{5,6}"))
+            throw new IllegalArgumentException("Pincode must be 5-6 digits");
+        this.pincode = trimmedPincode;
     }
 
     public int getCapacity() { return capacity; }
     public void setCapacity(int capacity) {
-        if (capacity < 0)
-            throw new IllegalArgumentException("Capacity cannot be negative");
+        if (capacity <= 0)
+            throw new IllegalArgumentException("Capacity must be a positive integer");
         this.capacity = capacity;
     }
 

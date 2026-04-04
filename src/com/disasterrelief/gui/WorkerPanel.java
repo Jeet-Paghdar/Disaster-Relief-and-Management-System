@@ -27,7 +27,8 @@ public class WorkerPanel extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         formContainer.add(new JLabel("First Name:"), gbc);
         JTextField txtFirstName = new JTextField(12);
         gbc.gridx = 1;
@@ -39,7 +40,8 @@ public class WorkerPanel extends JPanel {
         gbc.gridx = 3;
         formContainer.add(txtLastName, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         formContainer.add(new JLabel("Age:"), gbc);
         JTextField txtAge = new JTextField(12);
         gbc.gridx = 1;
@@ -51,7 +53,8 @@ public class WorkerPanel extends JPanel {
         gbc.gridx = 3;
         formContainer.add(txtEmail, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         formContainer.add(new JLabel("Specialty:"), gbc);
         JTextField txtSpecialty = new JTextField(12);
         gbc.gridx = 1;
@@ -59,13 +62,14 @@ public class WorkerPanel extends JPanel {
 
         gbc.gridx = 2;
         formContainer.add(new JLabel("Shift:"), gbc);
-        JComboBox<String> comboShift = new JComboBox<>(new String[]{"Day", "Afternoon", "Night"});
+        JComboBox<String> comboShift = new JComboBox<>(new String[] { "Day", "Afternoon", "Night" });
         gbc.gridx = 3;
         formContainer.add(comboShift, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridy = 3;
         formContainer.add(new JLabel("Gender:"), gbc);
-        JComboBox<String> comboGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        JComboBox<String> comboGender = new JComboBox<>(new String[] { "Male", "Female", "Other" });
         gbc.gridx = 1;
         formContainer.add(comboGender, gbc);
 
@@ -76,12 +80,14 @@ public class WorkerPanel extends JPanel {
         btnPanel.add(btnAdd);
         btnPanel.add(btnDelete);
 
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         gbc.gridwidth = 4;
         formContainer.add(btnPanel, gbc);
 
         // Pushing everything left
-        gbc.gridx = 4; gbc.gridy = 0;
+        gbc.gridx = 4;
+        gbc.gridy = 0;
         gbc.gridheight = 5;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -90,31 +96,32 @@ public class WorkerPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"ID", "First Name", "Last Name", "Age", "Email", "Specialty", "Shift"};
+        String[] cols = { "ID", "First Name", "Last Name", "Age", "Email", "Specialty", "Shift" };
         tableModel = new DefaultTableModel(cols, 0);
         workerTable = new JTable(tableModel);
         add(new JScrollPane(workerTable), BorderLayout.CENTER);
 
         // Actions
         btnAdd.addActionListener(e -> {
-            if (txtFirstName.getText().trim().isEmpty() || txtLastName.getText().trim().isEmpty() || 
-                txtSpecialty.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in all text fields.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            if (txtFirstName.getText().trim().isEmpty() || txtLastName.getText().trim().isEmpty() ||
+                    txtSpecialty.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill in all text fields.", "Validation Error",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             try {
                 SocialWorker sw = new SocialWorker();
                 sw.setFirstName(txtFirstName.getText().trim());
                 sw.setLastName(txtLastName.getText().trim());
-                
+
                 if (!txtAge.getText().trim().isEmpty()) {
                     sw.setAge(Integer.parseInt(txtAge.getText().trim()));
                 }
                 sw.setEmail(txtEmail.getText().trim());
-                
+
                 sw.setSpecialisation(txtSpecialty.getText().trim());
                 sw.setWorkShift((String) comboShift.getSelectedItem());
-                
+
                 // Set Gender from UI
                 sw.setGender((String) comboGender.getSelectedItem());
                 sw.setPhoneNumber("");
@@ -126,7 +133,7 @@ public class WorkerPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
         });
-        
+
         btnDelete.addActionListener(e -> {
             int selectedRow = workerTable.getSelectedRow();
             if (selectedRow >= 0) {
@@ -151,8 +158,8 @@ public class WorkerPanel extends JPanel {
             tableModel.setRowCount(0);
             List<SocialWorker> workers = workerDAO.getAllWorkers();
             for (SocialWorker w : workers) {
-                tableModel.addRow(new Object[]{
-                        w.getEmployeeId(), w.getFirstName(), w.getLastName(), 
+                tableModel.addRow(new Object[] {
+                        w.getEmployeeId(), w.getFirstName(), w.getLastName(),
                         w.getAge(), w.getEmail(),
                         w.getSpecialisation(), w.getWorkShift()
                 });

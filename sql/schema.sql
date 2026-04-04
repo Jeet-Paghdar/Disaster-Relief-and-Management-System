@@ -86,7 +86,7 @@ create table MEDICAL_RECORD (
 -- 9. VICTIM_DIETARY_RESTRICTIONS
 create table VICTIM_DIETARY_RESTRICTIONS (
     VICTIM_ID int,
-    RESTRICTION_TYPE varchar(10),
+    RESTRICTION_TYPE varchar(50),
     primary key (VICTIM_ID, RESTRICTION_TYPE),
     foreign key (VICTIM_ID) references VICTIM(VICTIM_ID)
 );

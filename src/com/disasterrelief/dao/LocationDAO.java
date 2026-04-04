@@ -56,12 +56,28 @@ public class LocationDAO {
     }
 
     public void deleteLocation(int locationId) throws SQLException {
-        String sql = "DELETE FROM LOCATION WHERE LOCATION_ID = ?";
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Remove links from LOCATION_SUPPLY first
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM LOCATION_SUPPLY WHERE LOCATION_ID = ?")) {
+                    stmt.setInt(1, locationId);
+                    stmt.executeUpdate();
+                }
 
-        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                // Delete the Location
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM LOCATION WHERE LOCATION_ID = ?")) {
+                    stmt.setInt(1, locationId);
+                    stmt.executeUpdate();
+                }
 
-            stmt.setInt(1, locationId);
-            stmt.executeUpdate();
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
         }
     }
 }

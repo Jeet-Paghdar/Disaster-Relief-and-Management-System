@@ -16,15 +16,14 @@ public class Person {
     public Person() {}
 
     public Person(int personId, String firstName, String lastName,
-                  LocalDate dob, String gender,
+                  LocalDate dob, int age, String gender,
                   String email, String phoneNumber) 
     {
         this.personId = personId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.dob = dob;
-        // Age is generally calculated automatically in database routines,
-        // so we omit it from the constructor.
+        this.age = age;
         this.gender = gender;
         this.email = email;
         this.phoneNumber = phoneNumber;

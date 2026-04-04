@@ -12,11 +12,11 @@ public class SocialWorker extends Person {
     }
 
     public SocialWorker(int personId, String firstName, String lastName,
-                        LocalDate dob, String gender, String email,
+                        LocalDate dob, int age, String gender, String email,
                         String phoneNumber, int employeeId,
                         String specialisation, String workShift) {
 
-        super(personId, firstName, lastName, dob, gender, email, phoneNumber);
+        super(personId, firstName, lastName, dob, age, gender, email, phoneNumber);
 
         this.employeeId = employeeId;
         this.specialisation = specialisation;

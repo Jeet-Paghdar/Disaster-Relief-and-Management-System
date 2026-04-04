@@ -9,15 +9,16 @@ public class Victim extends Person {
     private String injuryStatus;
     private LocalDate entryDate;
     private int disasterId;
+    private String dietaryRestriction;
 
     public Victim() {
     }
 
     public Victim(int personId, String firstName, String lastName,
-            LocalDate dob, String gender, String email,
+            LocalDate dob, int age, String gender, String email,
             String phoneNumber, String addressBefore, String addressAfter,
             String injuryStatus, LocalDate entryDate, int disasterId) {
-        super(personId, firstName, lastName, dob, gender, email, phoneNumber);
+        super(personId, firstName, lastName, dob, age, gender, email, phoneNumber);
         this.addressBefore = addressBefore;
         this.addressAfter = addressAfter;
         this.injuryStatus = injuryStatus;
@@ -65,6 +66,14 @@ public class Victim extends Person {
 
     public void setDisasterId(int disasterId) {
         this.disasterId = disasterId;
+    }
+
+    public String getDietaryRestriction() {
+        return dietaryRestriction;
+    }
+
+    public void setDietaryRestriction(String dietaryRestriction) {
+        this.dietaryRestriction = dietaryRestriction;
     }
 
     @Override

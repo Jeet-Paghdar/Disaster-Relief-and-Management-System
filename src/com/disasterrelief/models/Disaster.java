@@ -7,15 +7,17 @@ public class Disaster {
     private String severity;
     private String affectedRegions;
     private int agencyId;
+    private String agencyName;
 
     public Disaster() {}
 
-    public Disaster(int disasterId, String type, String severity, String affectedRegions, int agencyId) {
+    public Disaster(int disasterId, String type, String severity, String affectedRegions, int agencyId, String agencyName) {
         this.disasterId = disasterId;
         this.type = type;
         this.severity = severity;
         this.affectedRegions = affectedRegions;
         this.agencyId = agencyId;
+        this.agencyName = agencyName;
     }
 
     public int getDisasterId() { return disasterId; }
@@ -32,6 +34,9 @@ public class Disaster {
 
     public int getAgencyId() { return agencyId; }
     public void setAgencyId(int agencyId) { this.agencyId = agencyId; }
+    
+    public String getAgencyName() { return agencyName; }
+    public void setAgencyName(String agencyName) { this.agencyName = agencyName; }
 
     @Override
     public String toString() {

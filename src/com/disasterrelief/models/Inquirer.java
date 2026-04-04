@@ -11,9 +11,9 @@ public class Inquirer extends Person {
     }
 
     public Inquirer(int personId, String firstName, String lastName,
-            LocalDate dob, String gender, String email,
+            LocalDate dob, int age, String gender, String email,
             String phoneNumber, int inquirerId, LocalDate inquiryDate) {
-        super(personId, firstName, lastName, dob, gender, email, phoneNumber);
+        super(personId, firstName, lastName, dob, age, gender, email, phoneNumber);
         this.inquirerId = inquirerId;
         setInquiryDate(inquiryDate);
     }

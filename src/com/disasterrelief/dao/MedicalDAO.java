@@ -2,7 +2,6 @@ package com.disasterrelief.dao;
 
 import com.disasterrelief.models.MedicalRecord;
 import com.disasterrelief.utils.DBConnection;
-
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -54,6 +53,30 @@ public class MedicalDAO {
                     );
                     records.add(r);
                 }
+            }
+        }
+        return records;
+    }
+
+    public List<MedicalRecord> getAllMedicalRecords() throws SQLException {
+        List<MedicalRecord> records = new ArrayList<>();
+        String sql = "SELECT * FROM MEDICAL_RECORD";
+
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Date treatmentSQLDate = rs.getDate("TREATMENT_DATE");
+                LocalDate treatmentDate = (treatmentSQLDate != null) ? treatmentSQLDate.toLocalDate() : null;
+
+                MedicalRecord r = new MedicalRecord(
+                        rs.getInt("RECORD_NUMBER"),
+                        rs.getInt("VICTIM_ID"),
+                        rs.getString("BLOOD_TYPE"),
+                        rs.getString("PRESCRIPTIONS"),
+                        rs.getString("TREATMENT_DETAILS"),
+                        treatmentDate,
+                        rs.getInt("WORKER_ID")
+                );
+                records.add(r);
             }
         }
         return records;

@@ -2,7 +2,6 @@ package com.disasterrelief.dao;
 
 import com.disasterrelief.models.SocialWorker;
 import com.disasterrelief.utils.DBConnection;
-
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -11,7 +10,7 @@ import java.util.List;
 public class WorkerDAO {
 
     public void addWorker(SocialWorker worker) throws SQLException {
-        String personSQL = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, DOB, GENDER, EMAIL, PHONE_NUMBER) VALUES (?, ?, ?, ?, ?, ?)";
+        String personSQL = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, DOB, AGE, GENDER, EMAIL, PHONE_NUMBER) VALUES (?, ?, ?, ?, ?, ?, ?)";
         String workerSQL = "INSERT INTO SOCIAL_WORKER (PERSON_ID, SPECIALISATION, WORK_SHIFT) VALUES (?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection()) {
@@ -22,9 +21,10 @@ public class WorkerDAO {
                 personStmt.setString(1, worker.getFirstName());
                 personStmt.setString(2, worker.getLastName());
                 personStmt.setDate(3, worker.getDob() != null ? Date.valueOf(worker.getDob()) : null);
-                personStmt.setString(4, worker.getGender());
-                personStmt.setString(5, worker.getEmail());
-                personStmt.setString(6, worker.getPhoneNumber());
+                personStmt.setInt(4, worker.getAge());
+                personStmt.setString(5, worker.getGender());
+                personStmt.setString(6, worker.getEmail());
+                personStmt.setString(7, worker.getPhoneNumber());
                 personStmt.executeUpdate();
 
                 int personId;
@@ -69,6 +69,7 @@ public class WorkerDAO {
                         rs.getString("FIRST_NAME"),
                         rs.getString("LAST_NAME"),
                         dob,
+                        rs.getInt("AGE"),
                         rs.getString("GENDER"),
                         rs.getString("EMAIL"),
                         rs.getString("PHONE_NUMBER"),

@@ -2,6 +2,7 @@ package com.disasterrelief.gui;
 
 import com.disasterrelief.dao.MedicalDAO;
 import com.disasterrelief.models.MedicalRecord;
+import com.disasterrelief.utils.ValidationUtils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -19,65 +20,125 @@ public class MedicalPanel extends JPanel {
         medicalDAO = new MedicalDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(Color.WHITE);
 
         // Form
-        JPanel formContainer = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel formContainer = new JPanel(new GridBagLayout());
+        formContainer.setBackground(Color.WHITE);
         formContainer.setBorder(BorderFactory.createTitledBorder("Add Medical Record"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.fill = GridBagConstraints.NONE; // Prevents stretching
+        gbc.anchor = GridBagConstraints.WEST;
 
-        JPanel formPanel = new JPanel(new GridLayout(3, 4, 15, 10));
+        // Adaptive Pinning: Right Glue (Column 4)
+        gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 1.0;
+        formContainer.add(Box.createHorizontalGlue(), gbc);
 
-        JTextField txtVictimId = new JTextField(12);
-        JTextField txtBloodType = new JTextField(12);
-        JTextField txtTreatments = new JTextField(12);
-        JTextField txtWorkerId = new JTextField(12);
+        Dimension fieldSize = new Dimension(150, 30);
 
-        formPanel.add(new JLabel("Victim ID:"));
-        formPanel.add(txtVictimId);
-        formPanel.add(new JLabel("Blood Type:"));
-        formPanel.add(txtBloodType);
-        formPanel.add(new JLabel("Treatments:"));
-        formPanel.add(txtTreatments);
-        formPanel.add(new JLabel("Worker ID:"));
-        formPanel.add(txtWorkerId);
+        JTextField txtVictimId = new JTextField();
+        txtVictimId.setPreferredSize(fieldSize);
+        txtVictimId.setMinimumSize(fieldSize);
+        txtVictimId.setMargin(new Insets(5, 8, 5, 8));
 
+        JTextField txtBloodType = new JTextField();
+        txtBloodType.setPreferredSize(fieldSize);
+        txtBloodType.setMinimumSize(fieldSize);
+        txtBloodType.setMargin(new Insets(5, 8, 5, 8));
+
+        JTextField txtTreatments = new JTextField();
+        txtTreatments.setPreferredSize(fieldSize);
+        txtTreatments.setMinimumSize(fieldSize);
+        txtTreatments.setMargin(new Insets(5, 8, 5, 8));
+
+        JTextField txtWorkerId = new JTextField();
+        txtWorkerId.setPreferredSize(fieldSize);
+        txtWorkerId.setMinimumSize(fieldSize);
+        txtWorkerId.setMargin(new Insets(5, 8, 5, 8));
+
+        // Row 0
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        formContainer.add(new JLabel("Victim ID:"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtVictimId, gbc);
+        
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Blood Type:"), gbc);
+        gbc.gridx = 3; 
+        formContainer.add(txtBloodType, gbc);
+
+        // Row 1
+        gbc.gridy = 1;
+        gbc.gridx = 0; 
+        formContainer.add(new JLabel("Treatments:"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtTreatments, gbc);
+        
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Worker ID:"), gbc);
+        gbc.gridx = 3; 
+        formContainer.add(txtWorkerId, gbc);
+
+        // Row 2: Buttons
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Record");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
-        formPanel.add(btnAdd);
-        formPanel.add(btnDelete);
-        formPanel.add(btnRefresh);
+        btnPanel.add(btnAdd);
+        btnPanel.add(btnDelete);
+        btnPanel.add(btnRefresh);
 
-        formContainer.add(formPanel);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 4;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(15, 10, 5, 10);
+        formContainer.add(btnPanel, gbc);
+
         add(formContainer, BorderLayout.NORTH);
 
         // Table
         String[] cols = {"Record Number", "Victim ID", "Blood Type", "Treatments", "Date", "Worker ID"};
         tableModel = new DefaultTableModel(cols, 0);
         medicalTable = new JTable(tableModel);
+        medicalTable.setRowHeight(30);
+        medicalTable.setFillsViewportHeight(true);
+        
+        // Brighter Header
+        medicalTable.getTableHeader().setBackground(new Color(30, 48, 80));
+        medicalTable.getTableHeader().setForeground(Color.WHITE);
+        medicalTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
         add(new JScrollPane(medicalTable), BorderLayout.CENTER);
 
         // Actions
         btnAdd.addActionListener(e -> {
-            if (txtBloodType.getText().trim().isEmpty() || txtTreatments.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in Blood Type and Treatments.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            String vIdStr = txtVictimId.getText().trim();
+            String blood = txtBloodType.getText().trim();
+            String treats = txtTreatments.getText().trim();
+            String wIdStr = txtWorkerId.getText().trim();
+
+            if (!ValidationUtils.isValidNumber(vIdStr)) {
+                JOptionPane.showMessageDialog(this, "Invalid Victim ID (must be a number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            int victimId;
-            int workerId = 0;
-            try {
-                victimId = Integer.parseInt(txtVictimId.getText().trim());
-                if (!txtWorkerId.getText().trim().isEmpty()) {
-                    workerId = Integer.parseInt(txtWorkerId.getText().trim());
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Victim ID and Worker ID must be valid integers.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            if (!ValidationUtils.isNotEmpty(blood)) {
+                JOptionPane.showMessageDialog(this, "Invalid Blood Type (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!ValidationUtils.isNotEmpty(treats)) {
+                JOptionPane.showMessageDialog(this, "Invalid Treatments (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!ValidationUtils.isValidNumber(wIdStr)) {
+                JOptionPane.showMessageDialog(this, "Invalid Worker ID (must be a number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             try {
                 MedicalRecord record = new MedicalRecord(
-                        0, victimId, txtBloodType.getText().trim(), "Prescription TBD", 
-                        txtTreatments.getText().trim(), LocalDate.now(), workerId
+                        0, Integer.parseInt(vIdStr), blood, "Prescription TBD", 
+                        treats, LocalDate.now(), Integer.parseInt(wIdStr)
                 );
 
                 medicalDAO.addMedicalRecord(record);

@@ -2,6 +2,7 @@ package com.disasterrelief.gui;
 
 import com.disasterrelief.dao.VictimDAO;
 import com.disasterrelief.models.Victim;
+import com.disasterrelief.utils.ValidationUtils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -19,66 +20,102 @@ public class VictimPanel extends JPanel {
         victimDAO = new VictimDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(Color.WHITE);
 
         // --- TOP: Input Form ---
         JPanel formContainer = new JPanel(new GridBagLayout());
+        formContainer.setBackground(Color.WHITE);
         formContainer.setBorder(BorderFactory.createTitledBorder("Registration & Life Safety"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.fill = GridBagConstraints.NONE; // Prevents stretching
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Section A: Personal
-        gbc.gridx = 0; gbc.gridy = 0;
+        Dimension fieldSize = new Dimension(150, 30);
+
+        // Row 0: Name
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
         formContainer.add(new JLabel("First Name:"), gbc);
-        JTextField txtFirstName = new JTextField(12);
-        gbc.gridx = 1;
+        JTextField txtFirstName = new JTextField();
+        txtFirstName.setPreferredSize(fieldSize);
+        txtFirstName.setMinimumSize(fieldSize);
+        txtFirstName.setMargin(new Insets(5, 8, 5, 8));
+        gbc.gridx = 1; 
         formContainer.add(txtFirstName, gbc);
-
-        gbc.gridx = 2;
+ 
+        gbc.gridx = 2; 
         formContainer.add(new JLabel("Last Name:"), gbc);
-        JTextField txtLastName = new JTextField(12);
-        gbc.gridx = 3;
+        JTextField txtLastName = new JTextField();
+        txtLastName.setPreferredSize(fieldSize);
+        txtLastName.setMinimumSize(fieldSize);
+        txtLastName.setMargin(new Insets(5, 8, 5, 8));
+        gbc.gridx = 3; 
         formContainer.add(txtLastName, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1;
+        
+        // Adaptive Pinning: Right Glue (1.0) absorbs all extra space
+        gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 1.0;
+        formContainer.add(Box.createHorizontalGlue(), gbc);
+ 
+        // Row 1: Age & Gender
+        gbc.gridy = 1;
+        gbc.gridx = 0; gbc.weightx = 0.0;
         formContainer.add(new JLabel("Age:"), gbc);
-        JTextField txtAge = new JTextField(12);
-        gbc.gridx = 1;
+        JTextField txtAge = new JTextField();
+        txtAge.setPreferredSize(fieldSize);
+        txtAge.setMinimumSize(fieldSize);
+        txtAge.setMargin(new Insets(5, 8, 5, 8));
+        gbc.gridx = 1; 
         formContainer.add(txtAge, gbc);
-
-        gbc.gridx = 2;
+ 
+        gbc.gridx = 2; 
         formContainer.add(new JLabel("Gender:"), gbc);
         JComboBox<String> comboGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
-        gbc.gridx = 3;
+        comboGender.setPreferredSize(fieldSize);
+        comboGender.setMinimumSize(fieldSize);
+        gbc.gridx = 3; 
         formContainer.add(comboGender, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2;
+ 
+        // Row 2: Phone & Disaster ID
+        gbc.gridy = 2;
+        gbc.gridx = 0; gbc.weightx = 0.0;
         formContainer.add(new JLabel("Phone:"), gbc);
-        JTextField txtPhone = new JTextField(12);
-        gbc.gridx = 1;
+        JTextField txtPhone = new JTextField();
+        txtPhone.setPreferredSize(fieldSize);
+        txtPhone.setMinimumSize(fieldSize);
+        txtPhone.setMargin(new Insets(5, 8, 5, 8));
+        gbc.gridx = 1; 
         formContainer.add(txtPhone, gbc);
-
-        gbc.gridx = 2;
+ 
+        gbc.gridx = 2; 
         formContainer.add(new JLabel("Disaster ID:"), gbc);
-        JTextField txtDisasterId = new JTextField("1", 12);
-        gbc.gridx = 3;
+        JTextField txtDisasterId = new JTextField("1");
+        txtDisasterId.setPreferredSize(fieldSize);
+        txtDisasterId.setMinimumSize(fieldSize);
+        txtDisasterId.setMargin(new Insets(5, 8, 5, 8));
+        gbc.gridx = 3; 
         formContainer.add(txtDisasterId, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3;
-        formContainer.add(new JLabel("Injury:"), gbc);
+ 
+        // Row 3: Injury & Diet
+        gbc.gridy = 3;
+        gbc.gridx = 0; gbc.weightx = 0.0;
+        formContainer.add(new JLabel("Injury Status:"), gbc);
         JComboBox<String> comboInjury = new JComboBox<>(new String[]{"None", "Minor", "Moderate", "Severe", "Critical"});
-        gbc.gridx = 1;
+        comboInjury.setPreferredSize(fieldSize);
+        comboInjury.setMinimumSize(fieldSize);
+        gbc.gridx = 1; 
         formContainer.add(comboInjury, gbc);
-
-        gbc.gridx = 2;
-        formContainer.add(new JLabel("Diet:"), gbc);
+ 
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Dietary Need:"), gbc);
         JComboBox<String> comboDiet = new JComboBox<>(new String[]{"None", "Vegetarian", "Vegan", "Non-Vegetarian", "Gluten-Free"});
-        gbc.gridx = 3;
+        comboDiet.setPreferredSize(fieldSize);
+        comboDiet.setMinimumSize(fieldSize);
+        gbc.gridx = 3; 
         formContainer.add(comboDiet, gbc);
 
-        // Buttons
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        // Buttons Row
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Victim");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh Table");
@@ -88,14 +125,9 @@ public class VictimPanel extends JPanel {
 
         gbc.gridx = 0; gbc.gridy = 4;
         gbc.gridwidth = 4;
+        gbc.weightx = 0.0;
+        gbc.insets = new Insets(15, 10, 5, 10);
         formContainer.add(btnPanel, gbc);
-
-        // Pushing everything to the left
-        gbc.gridx = 4; gbc.gridy = 0;
-        gbc.gridheight = 5;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        formContainer.add(new JPanel(), gbc);
 
         add(formContainer, BorderLayout.NORTH);
 
@@ -103,26 +135,52 @@ public class VictimPanel extends JPanel {
         String[] columns = {"ID", "First Name", "Last Name", "Age", "Gender", "Injury", "Disaster ID"};
         tableModel = new DefaultTableModel(columns, 0);
         victimTable = new JTable(tableModel);
+        victimTable.setRowHeight(30);
+        victimTable.setFillsViewportHeight(true);
+        
+        // Brighter Header
+        victimTable.getTableHeader().setBackground(new Color(30, 48, 80));
+        victimTable.getTableHeader().setForeground(Color.WHITE);
+        victimTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
         add(new JScrollPane(victimTable), BorderLayout.CENTER);
 
         // --- ACTIONS ---
         btnAdd.addActionListener(e -> {
-            if (txtFirstName.getText().trim().isEmpty() || txtLastName.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in First and Last Name.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            String fName = txtFirstName.getText().trim();
+            String lName = txtLastName.getText().trim();
+            String ageStr = txtAge.getText().trim();
+            String phone = txtPhone.getText().trim();
+            String dIdStr = txtDisasterId.getText().trim();
+
+            // 1. Validate First Name
+            if (!ValidationUtils.isValidName(fName)) {
+                JOptionPane.showMessageDialog(this, "Invalid First Name (use letters only).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            int disasterId, age = 0;
-            try {
-                disasterId = Integer.parseInt(txtDisasterId.getText().trim());
-                if (txtAge.getText().trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Age is mandatory.", "Validation Error", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                age = Integer.parseInt(txtAge.getText().trim());
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Disaster ID and Age must be valid numbers.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            // 2. Validate Last Name
+            if (!ValidationUtils.isValidName(lName)) {
+                JOptionPane.showMessageDialog(this, "Invalid Last Name (use letters only).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            // 3. Validate Age
+            if (!ValidationUtils.isValidNumber(ageStr)) {
+                JOptionPane.showMessageDialog(this, "Invalid Age (must be a positive number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            // 4. Validate Phone
+            if (!ValidationUtils.isValidPhone(phone)) {
+                JOptionPane.showMessageDialog(this, "Invalid Phone (must be exactly 10 digits).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            // 5. Validate Disaster ID
+            if (!ValidationUtils.isValidNumber(dIdStr)) {
+                JOptionPane.showMessageDialog(this, "Invalid Disaster ID.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            int age = Integer.parseInt(ageStr);
+            int disasterId = Integer.parseInt(dIdStr);
             
             try {
                 Victim v = new Victim();

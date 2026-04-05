@@ -2,6 +2,7 @@ package com.disasterrelief.gui;
 
 import com.disasterrelief.dao.LocationDAO;
 import com.disasterrelief.models.Location;
+import com.disasterrelief.utils.ValidationUtils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,47 +19,74 @@ public class LocationPanel extends JPanel {
         locationDAO = new LocationDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(Color.WHITE);
 
         // Form
         JPanel formContainer = new JPanel(new GridBagLayout());
+        formContainer.setBackground(Color.WHITE);
         formContainer.setBorder(BorderFactory.createTitledBorder("Manage Shelters & Locations"));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.fill = GridBagConstraints.NONE; // Prevents stretching
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+ 
+        // Adaptive Pinning: Right Glue (Column 4)
+        gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 1.0;
+        formContainer.add(Box.createHorizontalGlue(), gbc);
+ 
+        Dimension fieldSize = new Dimension(150, 30);
 
-        gbc.gridx = 0; gbc.gridy = 0;
-        formContainer.add(new JLabel("Name:"), gbc);
-        JTextField txtName = new JTextField(15);
-        gbc.gridx = 1;
-        formContainer.add(txtName, gbc);
+        JTextField txtName = new JTextField();
+        txtName.setPreferredSize(fieldSize);
+        txtName.setMinimumSize(fieldSize);
+        txtName.setMargin(new Insets(5, 8, 5, 8));
 
-        gbc.gridx = 2;
-        formContainer.add(new JLabel("Address:"), gbc);
-        JTextField txtAddr = new JTextField(15);
-        gbc.gridx = 3;
-        formContainer.add(txtAddr, gbc);
+        JTextField txtAddr = new JTextField();
+        txtAddr.setPreferredSize(fieldSize);
+        txtAddr.setMinimumSize(fieldSize);
+        txtAddr.setMargin(new Insets(5, 8, 5, 8));
 
-        gbc.gridx = 0; gbc.gridy = 1;
-        formContainer.add(new JLabel("Type:"), gbc);
+        JTextField txtPincode = new JTextField();
+        txtPincode.setPreferredSize(fieldSize);
+        txtPincode.setMinimumSize(fieldSize);
+        txtPincode.setMargin(new Insets(5, 8, 5, 8));
+
+        JTextField txtCapacity = new JTextField();
+        txtCapacity.setPreferredSize(fieldSize);
+        txtCapacity.setMinimumSize(fieldSize);
+        txtCapacity.setMargin(new Insets(5, 8, 5, 8));
+
         JComboBox<String> comboType = new JComboBox<>(new String[]{"Shelter", "Hospital", "Warehouse"});
-        gbc.gridx = 1;
+        comboType.setPreferredSize(fieldSize);
+        comboType.setMinimumSize(fieldSize);
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        formContainer.add(new JLabel("Name:"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtName, gbc);
+  
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Address:"), gbc);
+        gbc.gridx = 3; 
+        formContainer.add(txtAddr, gbc);
+ 
+        gbc.gridx = 0; gbc.gridy = 1; 
+        formContainer.add(new JLabel("Type:"), gbc);
+        gbc.gridx = 1; 
         formContainer.add(comboType, gbc);
-
-        gbc.gridx = 2;
+  
+        gbc.gridx = 2; 
         formContainer.add(new JLabel("Pincode:"), gbc);
-        JTextField txtPincode = new JTextField(15);
-        gbc.gridx = 3;
+        gbc.gridx = 3; 
         formContainer.add(txtPincode, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2;
+ 
+        gbc.gridx = 0; gbc.gridy = 2; 
         formContainer.add(new JLabel("Capacity:"), gbc);
-        JTextField txtCapacity = new JTextField(15);
-        gbc.gridx = 1;
+        gbc.gridx = 1; 
         formContainer.add(txtCapacity, gbc);
 
         // Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Location");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
@@ -66,16 +94,12 @@ public class LocationPanel extends JPanel {
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
 
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridy = 3;
         gbc.gridwidth = 4;
-        formContainer.add(btnPanel, gbc);
-
-        // Pushing everything left
-        gbc.gridx = 4; gbc.gridy = 0;
-        gbc.gridheight = 4;
         gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        formContainer.add(new JPanel(), gbc);
+        gbc.insets = new Insets(15, 10, 5, 10);
+        formContainer.add(btnPanel, gbc);
 
         add(formContainer, BorderLayout.NORTH);
 
@@ -83,30 +107,47 @@ public class LocationPanel extends JPanel {
         String[] cols = {"Loc ID", "Name", "Address", "Type", "Pincode", "Capacity"};
         tableModel = new DefaultTableModel(cols, 0);
         locationTable = new JTable(tableModel);
+        locationTable.setRowHeight(30);
+        locationTable.setFillsViewportHeight(true);
+        
+        // Brighter Header
+        locationTable.getTableHeader().setBackground(new Color(30, 48, 80));
+        locationTable.getTableHeader().setForeground(Color.WHITE);
+        locationTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
         add(new JScrollPane(locationTable), BorderLayout.CENTER);
 
         // Actions
         btnAdd.addActionListener(e -> {
-            if (txtName.getText().trim().isEmpty() || txtAddr.getText().trim().isEmpty() || txtCapacity.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in Name, Address, and Capacity.");
+            String name = txtName.getText().trim();
+            String address = txtAddr.getText().trim();
+            String pincode = txtPincode.getText().trim();
+            String capacityStr = txtCapacity.getText().trim();
+
+            if (!ValidationUtils.isNotEmpty(name)) {
+                JOptionPane.showMessageDialog(this, "Invalid Name (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
-            int capacity;
-            try {
-                capacity = Integer.parseInt(txtCapacity.getText().trim());
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Capacity must be a number.");
+            if (!ValidationUtils.isNotEmpty(address)) {
+                JOptionPane.showMessageDialog(this, "Invalid Address (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!ValidationUtils.isValidPincode(pincode)) {
+                JOptionPane.showMessageDialog(this, "Invalid Pincode (must be exactly 6 digits).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!ValidationUtils.isValidNumber(capacityStr)) {
+                JOptionPane.showMessageDialog(this, "Invalid Capacity (must be a positive number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             try {
                 Location loc = new Location();
-                loc.setName(txtName.getText().trim());
-                loc.setAddress(txtAddr.getText().trim());
+                loc.setName(name);
+                loc.setAddress(address);
                 loc.setType((String) comboType.getSelectedItem());
-                loc.setPincode(txtPincode.getText().trim());
-                loc.setCapacity(capacity);
+                loc.setPincode(pincode);
+                loc.setCapacity(Integer.parseInt(capacityStr));
 
                 locationDAO.addLocation(loc);
                 loadTableData();

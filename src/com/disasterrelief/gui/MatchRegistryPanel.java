@@ -16,6 +16,7 @@ public class MatchRegistryPanel extends JPanel {
         inquirerDAO = new InquirerDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(Color.WHITE);
 
         JLabel header = new JLabel("Successful Family Matches & Registry", SwingConstants.CENTER);
         header.setFont(new Font("Arial", Font.BOLD, 18));
@@ -24,11 +25,20 @@ public class MatchRegistryPanel extends JPanel {
         String[] cols = {"Inquirer Name", "Victim Name", "Relationship / Info"};
         tableModel = new DefaultTableModel(cols, 0);
         matchTable = new JTable(tableModel);
+        matchTable.setRowHeight(30);
+        matchTable.setFillsViewportHeight(true);
+        
+        // Brighter Header
+        matchTable.getTableHeader().setBackground(new Color(30, 48, 80));
+        matchTable.getTableHeader().setForeground(Color.WHITE);
+        matchTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
         add(new JScrollPane(matchTable), BorderLayout.CENTER);
 
         JButton btnDelete = new JButton("Delete Selected Match");
         JButton btnRefresh = new JButton("Refresh Registry");
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.setBackground(Color.WHITE);
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
         add(btnPanel, BorderLayout.SOUTH);

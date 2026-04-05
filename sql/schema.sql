@@ -161,4 +161,16 @@ create table VICTIM_SUPPLY (
     foreign key (VICTIM_ID) references VICTIM(VICTIM_ID),
     foreign key (SUPPLY_ID) references SUPPLY(SUPPLY_ID)
 );
-show tables;
+
+-- 17. USERS
+CREATE TABLE USERS (
+    USER_ID INT AUTO_INCREMENT PRIMARY KEY,
+    USERNAME VARCHAR(50) NOT NULL UNIQUE,
+    PASSWORD VARCHAR(100) NOT NULL,
+    CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default admin
+INSERT INTO USERS (USERNAME, PASSWORD) VALUES ('admin', 'admin123');
+
+show tables;

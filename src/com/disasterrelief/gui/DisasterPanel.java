@@ -2,6 +2,7 @@ package com.disasterrelief.gui;
 
 import com.disasterrelief.dao.DisasterDAO;
 import com.disasterrelief.models.Disaster;
+import com.disasterrelief.utils.ValidationUtils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,57 +19,112 @@ public class DisasterPanel extends JPanel {
         disasterDAO = new DisasterDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(Color.WHITE);
 
-        // Form
-        JPanel formContainer = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // --- TOP: Input Form ---
+        JPanel formContainer = new JPanel(new GridBagLayout());
+        formContainer.setBackground(Color.WHITE);
         formContainer.setBorder(BorderFactory.createTitledBorder("Log New Disaster"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.fill = GridBagConstraints.NONE; // Prevents stretching
+        gbc.anchor = GridBagConstraints.WEST;
 
-        JPanel formPanel = new JPanel(new GridLayout(3, 4, 15, 10));
+        // Adaptive Pinning: Right Glue (Column 4)
+        gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 1.0;
+        formContainer.add(Box.createHorizontalGlue(), gbc);
 
-        JTextField txtType = new JTextField(12);
-        JComboBox<String> comboAgency = new JComboBox<>(new String[]{
-            "1 - NDMA", "2 - NDRF", "3 - NIDM"
-        });
-        JTextField txtRegions = new JTextField(12);
+        Dimension fieldSize = new Dimension(150, 30);
+
+        JTextField txtType = new JTextField();
+        txtType.setPreferredSize(fieldSize);
+        txtType.setMinimumSize(fieldSize);
+        txtType.setMargin(new Insets(5, 8, 5, 8));
+
+        JComboBox<String> comboAgency = new JComboBox<>(new String[]{"1 - NDMA", "2 - NDRF", "3 - NIDM"});
+        comboAgency.setPreferredSize(fieldSize);
+        comboAgency.setMinimumSize(fieldSize);
+
+        JTextField txtRegions = new JTextField();
+        txtRegions.setPreferredSize(fieldSize);
+        txtRegions.setMinimumSize(fieldSize);
+        txtRegions.setMargin(new Insets(5, 8, 5, 8));
+
         JComboBox<String> comboSeverity = new JComboBox<>(new String[]{"High", "Moderate", "Low"});
+        comboSeverity.setPreferredSize(fieldSize);
+        comboSeverity.setMinimumSize(fieldSize);
 
-        formPanel.add(new JLabel("Type (e.g. Earthquake):"));
-        formPanel.add(txtType);
-        formPanel.add(new JLabel("Severity:"));
-        formPanel.add(comboSeverity);
-        formPanel.add(new JLabel("Affected Regions:"));
-        formPanel.add(txtRegions);
-        formPanel.add(new JLabel("Control Agency:"));
-        formPanel.add(comboAgency);
+        // Row 0
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        formContainer.add(new JLabel("Type (e.g. Earthquake):"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtType, gbc);
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Severity:"), gbc);
+        gbc.gridx = 3; 
+        formContainer.add(comboSeverity, gbc);
 
+        // Row 1
+        gbc.gridy = 1;
+        gbc.gridx = 0; 
+        formContainer.add(new JLabel("Affected Regions:"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtRegions, gbc);
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Control Agency:"), gbc);
+        gbc.gridx = 3; 
+        formContainer.add(comboAgency, gbc);
+
+        // Row 2: Buttons
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Disaster");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
-        formPanel.add(btnAdd);
-        formPanel.add(btnDelete);
-        formPanel.add(btnRefresh);
+        btnPanel.add(btnAdd);
+        btnPanel.add(btnDelete);
+        btnPanel.add(btnRefresh);
 
-        formContainer.add(formPanel);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 4;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(15, 10, 5, 10);
+        formContainer.add(btnPanel, gbc);
+
         add(formContainer, BorderLayout.NORTH);
 
         // Table
         String[] cols = {"Disaster ID", "Type", "Severity", "Affected Regions", "Handling Agency"};
         tableModel = new DefaultTableModel(cols, 0);
         disasterTable = new JTable(tableModel);
+        disasterTable.setRowHeight(30);
+        disasterTable.setFillsViewportHeight(true);
+        
+        // Brighter Header
+        disasterTable.getTableHeader().setBackground(new Color(30, 48, 80));
+        disasterTable.getTableHeader().setForeground(Color.WHITE);
+        disasterTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
         add(new JScrollPane(disasterTable), BorderLayout.CENTER);
 
         // Actions
         btnAdd.addActionListener(e -> {
-            if (txtType.getText().trim().isEmpty() || txtRegions.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in Type and Regions.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            String type = txtType.getText().trim();
+            String regions = txtRegions.getText().trim();
+
+            if (!ValidationUtils.isNotEmpty(type)) {
+                JOptionPane.showMessageDialog(this, "Invalid Type (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!ValidationUtils.isNotEmpty(regions)) {
+                JOptionPane.showMessageDialog(this, "Invalid Regions (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             try {
                 Disaster d = new Disaster();
-                d.setType(txtType.getText().trim());
+                d.setType(type);
                 d.setSeverity((String) comboSeverity.getSelectedItem());
-                d.setAffectedRegions(txtRegions.getText().trim());
+                d.setAffectedRegions(regions);
                 
                 // Parse agency ID from the combo box choice (e.g., "1 - NDMA" -> 1)
                 String selectedAgency = (String) comboAgency.getSelectedItem();

@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 import com.disasterrelief.dao.LocationDAO;
 import com.disasterrelief.models.Location;
+import com.disasterrelief.utils.ValidationUtils;
 
 public class SupplyPanel extends JPanel {
     private JTable supplyTable;
@@ -21,64 +22,121 @@ public class SupplyPanel extends JPanel {
         supplyDAO = new SupplyDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(Color.WHITE);
 
         // Form
-        JPanel formContainer = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel formContainer = new JPanel(new GridBagLayout());
+        formContainer.setBackground(Color.WHITE);
         formContainer.setBorder(BorderFactory.createTitledBorder("Manage Supplies"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.fill = GridBagConstraints.NONE; // Prevents stretching
+        gbc.anchor = GridBagConstraints.WEST;
+ 
+        // Adaptive Pinning: Right Glue (Column 4)
+        gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 1.0;
+        formContainer.add(Box.createHorizontalGlue(), gbc);
+ 
+        Dimension fieldSize = new Dimension(150, 30);
 
-        JPanel formPanel = new JPanel(new GridLayout(3, 4, 15, 10));
+        JTextField txtItemName = new JTextField();
+        txtItemName.setPreferredSize(fieldSize);
+        txtItemName.setMinimumSize(fieldSize);
+        txtItemName.setMargin(new Insets(5, 8, 5, 8));
 
-        JTextField txtItemName = new JTextField(12);
-        JTextField txtQuantity = new JTextField(12);
-        JTextField txtType = new JTextField(12);
+        JTextField txtQuantity = new JTextField();
+        txtQuantity.setPreferredSize(fieldSize);
+        txtQuantity.setMinimumSize(fieldSize);
+        txtQuantity.setMargin(new Insets(5, 8, 5, 8));
+
+        JTextField txtType = new JTextField();
+        txtType.setPreferredSize(fieldSize);
+        txtType.setMinimumSize(fieldSize);
+        txtType.setMargin(new Insets(5, 8, 5, 8));
+        
         JComboBox<String> comboLocation = new JComboBox<>();
+        comboLocation.setPreferredSize(fieldSize);
+        comboLocation.setMinimumSize(fieldSize);
         loadLocations(comboLocation);
-
-        formPanel.add(new JLabel("Item Name:"));
-        formPanel.add(txtItemName);
-        formPanel.add(new JLabel("Quantity:"));
-        formPanel.add(txtQuantity);
-        formPanel.add(new JLabel("Type (e.g. Food):"));
-        formPanel.add(txtType);
-        formPanel.add(new JLabel("Stored At Location:"));
-        formPanel.add(comboLocation);
-
+ 
+        // Row 0
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        formContainer.add(new JLabel("Item Name:"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtItemName, gbc);
+        
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Quantity:"), gbc);
+        gbc.gridx = 3; 
+        formContainer.add(txtQuantity, gbc);
+ 
+        // Row 1
+        gbc.gridy = 1;
+        gbc.gridx = 0; 
+        formContainer.add(new JLabel("Type (e.g. Food):"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtType, gbc);
+        
+        gbc.gridx = 2; 
+        formContainer.add(new JLabel("Stored At Location:"), gbc);
+        gbc.gridx = 3; 
+        formContainer.add(comboLocation, gbc);
+ 
+        // Row 2: Buttons
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Supply");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
-        formPanel.add(btnAdd);
-        formPanel.add(btnDelete);
-        formPanel.add(btnRefresh);
-
-        formContainer.add(formPanel);
+        btnPanel.add(btnAdd);
+        btnPanel.add(btnDelete);
+        btnPanel.add(btnRefresh);
+ 
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 4;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(15, 10, 5, 10);
+        formContainer.add(btnPanel, gbc);
+ 
         add(formContainer, BorderLayout.NORTH);
 
         // Table
         String[] cols = {"ID", "Item Name", "Quantity", "Type", "Expiry Date"};
         tableModel = new DefaultTableModel(cols, 0);
         supplyTable = new JTable(tableModel);
+        supplyTable.setRowHeight(30);
+        supplyTable.setFillsViewportHeight(true);
+        
+        // Brighter Header
+        supplyTable.getTableHeader().setBackground(new Color(30, 48, 80));
+        supplyTable.getTableHeader().setForeground(Color.WHITE);
+        supplyTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
         add(new JScrollPane(supplyTable), BorderLayout.CENTER);
 
         // Actions
         btnAdd.addActionListener(e -> {
-            if (txtItemName.getText().trim().isEmpty() || txtType.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in all text fields.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            String itemName = txtItemName.getText().trim();
+            String qtyStr = txtQuantity.getText().trim();
+            String type = txtType.getText().trim();
+
+            if (!ValidationUtils.isNotEmpty(itemName)) {
+                JOptionPane.showMessageDialog(this, "Invalid Item Name (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            int qty;
-            try {
-                qty = Integer.parseInt(txtQuantity.getText().trim());
-                if (qty < 0) throw new NumberFormatException();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Quantity must be a valid positive number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            if (!ValidationUtils.isValidNumber(qtyStr)) {
+                JOptionPane.showMessageDialog(this, "Invalid Quantity (must be a positive number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!ValidationUtils.isNotEmpty(type)) {
+                JOptionPane.showMessageDialog(this, "Invalid Type (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             try {
                 Supply s = new Supply();
-                s.setItemName(txtItemName.getText().trim());
-                s.setQuantity(qty);
-                s.setType(txtType.getText().trim());
+                s.setItemName(itemName);
+                s.setQuantity(Integer.parseInt(qtyStr));
+                s.setType(type);
                 s.setExpiryDate(LocalDate.now().plusMonths(6));
 
                 // Parse Location ID from selection e.g. "1 - Shelter A"

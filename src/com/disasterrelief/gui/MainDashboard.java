@@ -16,7 +16,9 @@ public class MainDashboard extends JFrame {
         this.navButtons = new ArrayList<>();
         
         setTitle("Disaster Relief & Management System - Welcome " + this.username);
-        setSize(1400, 850); // Generous size for professional look
+        setSize(1200, 750); // Improved size for standard laptops
+        setMinimumSize(new Dimension(900, 600));
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximize by default
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -34,7 +36,23 @@ public class MainDashboard extends JFrame {
 
         // 3. Content Area (Center)
         cardLayout = new CardLayout();
-        contentPanel = new JPanel(cardLayout);
+        contentPanel = new JPanel(cardLayout) {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                Container parent = getParent();
+                if (parent instanceof JViewport) {
+                    Dimension vp = parent.getSize();
+                    d.width = Math.max(d.width, vp.width);
+                    d.height = Math.max(d.height, vp.height);
+                }
+                // Enforce a strict minimum to guarantee scrollbars activate
+                // when the screen is smaller than this bounds.
+                d.width = Math.max(d.width, 900);
+                d.height = Math.max(d.height, 800);
+                return d;
+            }
+        };
         contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         contentPanel.setBackground(Color.WHITE);
 
@@ -48,7 +66,36 @@ public class MainDashboard extends JFrame {
         contentPanel.add(new InquirerPanel(), "Inquirer Matcher");
         contentPanel.add(new MatchRegistryPanel(), "Match Registry");
 
-        mainContainer.add(contentPanel, BorderLayout.CENTER);
+        final JScrollPane mainScrollPane = new JScrollPane(contentPanel);
+        mainScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        mainScrollPane.getVerticalScrollBar().setUnitIncrement(16); // smoother scrolling
+        mainScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+
+        // Fix Nested ScrollPane "Trackpad Trapping" Bug
+        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(event -> {
+            if (event instanceof java.awt.event.MouseWheelEvent) {
+                java.awt.event.MouseWheelEvent mwe = (java.awt.event.MouseWheelEvent) event;
+                java.awt.Component comp = mwe.getComponent();
+
+                if (comp == mainScrollPane || !SwingUtilities.isDescendingFrom(comp, this)) return;
+
+                JScrollPane inner = (comp instanceof JScrollPane) ? (JScrollPane) comp : 
+                    (JScrollPane) SwingUtilities.getAncestorOfClass(JScrollPane.class, comp);
+
+                if (inner != null && inner != mainScrollPane) {
+                    JScrollBar bar = inner.getVerticalScrollBar();
+                    boolean atTop = mwe.getPreciseWheelRotation() < 0 && bar.getValue() == 0;
+                    boolean atBottom = mwe.getPreciseWheelRotation() > 0 && bar.getValue() >= bar.getMaximum() - bar.getVisibleAmount();
+
+                    if (!bar.isVisible() || atTop || atBottom) {
+                        java.awt.event.MouseWheelEvent cloned = (java.awt.event.MouseWheelEvent) SwingUtilities.convertMouseEvent(comp, mwe, mainScrollPane);
+                        mainScrollPane.dispatchEvent(cloned);
+                    }
+                }
+            }
+        }, java.awt.AWTEvent.MOUSE_WHEEL_EVENT_MASK);
+
+        mainContainer.add(mainScrollPane, BorderLayout.CENTER);
         add(mainContainer);
         
         // Default to first tab

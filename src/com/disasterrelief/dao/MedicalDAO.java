@@ -81,6 +81,34 @@ public class MedicalDAO {
         return records;
     }
 
+    public void updateMedicalRecord(MedicalRecord record) throws SQLException {
+        String medSql = "UPDATE MEDICAL_RECORD SET PRESCRIPTIONS = ?, TREATMENT_DETAILS = ? WHERE RECORD_NUMBER = ?";
+        String vicSql = "UPDATE VICTIM SET BLOOD_TYPE = ? WHERE VICTIM_ID = ?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement stmt = conn.prepareStatement(medSql)) {
+                    stmt.setString(1, record.getPrescriptions());
+                    stmt.setString(2, record.getTreatmentDetails());
+                    stmt.setInt(3, record.getRecordNumber());
+                    stmt.executeUpdate();
+                }
+                try (PreparedStatement stmt2 = conn.prepareStatement(vicSql)) {
+                    stmt2.setString(1, record.getBloodType());
+                    stmt2.setInt(2, record.getVictimId());
+                    stmt2.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
     public void updateTreatment(int recordNumber, String treatmentDetails) throws SQLException {
         String sql = "UPDATE MEDICAL_RECORD SET TREATMENT_DETAILS = ? WHERE RECORD_NUMBER = ?";
 

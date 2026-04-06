@@ -10,7 +10,7 @@ import java.util.List;
 public class WorkerDAO {
 
     public void addWorker(SocialWorker worker) throws SQLException {
-        String personSQL = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, DOB, AGE, GENDER, EMAIL, PHONE_NUMBER) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String personSQL = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, DOB, GENDER, EMAIL, PHONE_NUMBER) VALUES (?, ?, ?, ?, ?, ?)";
         String workerSQL = "INSERT INTO SOCIAL_WORKER (PERSON_ID, SPECIALISATION, WORK_SHIFT) VALUES (?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection()) {
@@ -21,10 +21,9 @@ public class WorkerDAO {
                 personStmt.setString(1, worker.getFirstName());
                 personStmt.setString(2, worker.getLastName());
                 personStmt.setDate(3, worker.getDob() != null ? Date.valueOf(worker.getDob()) : null);
-                personStmt.setInt(4, worker.getAge());
-                personStmt.setString(5, worker.getGender());
-                personStmt.setString(6, worker.getEmail());
-                personStmt.setString(7, worker.getPhoneNumber());
+                personStmt.setString(4, worker.getGender());
+                personStmt.setString(5, worker.getEmail());
+                personStmt.setString(6, worker.getPhoneNumber());
                 personStmt.executeUpdate();
 
                 int personId;
@@ -55,7 +54,7 @@ public class WorkerDAO {
 
     public List<SocialWorker> getAllWorkers() throws SQLException {
         List<SocialWorker> workers = new ArrayList<>();
-        String sql = "SELECT p.*, sw.EMPLOYEE_ID, sw.SPECIALISATION, sw.WORK_SHIFT "
+        String sql = "SELECT p.*, fn_calculate_age(p.DOB) AS AGE, sw.EMPLOYEE_ID, sw.SPECIALISATION, sw.WORK_SHIFT "
                 + "FROM PERSON p JOIN SOCIAL_WORKER sw ON p.PERSON_ID = sw.PERSON_ID";
 
         try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {

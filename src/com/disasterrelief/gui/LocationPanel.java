@@ -26,6 +26,7 @@ public class LocationPanel extends JPanel {
         formContainer.setBackground(Color.WHITE);
         formContainer.setBorder(BorderFactory.createTitledBorder("Manage Shelters & Locations"));
         GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 10, 8, 10);
         gbc.fill = GridBagConstraints.NONE; // Prevents stretching
         gbc.anchor = GridBagConstraints.WEST;
  

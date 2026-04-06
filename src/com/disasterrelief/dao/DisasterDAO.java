@@ -10,27 +10,46 @@ import java.util.List;
 public class DisasterDAO {
 
     public void addDisaster(Disaster disaster) throws SQLException {
-        String sql = "INSERT INTO DISASTER (TYPE, SEVERITY, AFFECTED_REGIONS, AGENCY_ID) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO DISASTER (TYPE, SEVERITY, AGENCY_ID) VALUES (?, ?, ?)";
 
-        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnection.getConnection(); 
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, disaster.getType());
             stmt.setString(2, disaster.getSeverity());
-            stmt.setString(3, disaster.getAffectedRegions());
 
             if (disaster.getAgencyId() > 0) {
-                stmt.setInt(4, disaster.getAgencyId());
+                stmt.setInt(3, disaster.getAgencyId());
             } else {
-                stmt.setNull(4, java.sql.Types.INTEGER); // Allow null so it doesn't crash if Agency doesn't exist
+                stmt.setNull(3, java.sql.Types.INTEGER); // Allow null so it doesn't crash if Agency doesn't exist
             }
 
             stmt.executeUpdate();
+            
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int disasterId = rs.getInt(1);
+                    if (disaster.getAffectedRegions() != null && !disaster.getAffectedRegions().trim().isEmpty()) {
+                        String[] regions = disaster.getAffectedRegions().split(",");
+                        String regionSql = "INSERT INTO DISASTER_REGION (DISASTER_ID, REGION_NAME) VALUES (?, ?)";
+                        try (PreparedStatement regionStmt = conn.prepareStatement(regionSql)) {
+                            for (String r : regions) {
+                                if (r.trim().isEmpty()) continue;
+                                regionStmt.setInt(1, disasterId);
+                                regionStmt.setString(2, r.trim());
+                                regionStmt.addBatch();
+                            }
+                            regionStmt.executeBatch();
+                        }
+                    }
+                }
+            }
         }
     }
 
     public List<Disaster> getAllDisasters() throws SQLException {
         List<Disaster> disasters = new ArrayList<>();
-        String sql = "SELECT d.*, g.AGENCY_NAME FROM DISASTER d LEFT JOIN GOVT_AGENCY g ON d.AGENCY_ID = g.AGENCY_ID";
+        String sql = "SELECT d.*, g.AGENCY_NAME, (SELECT GROUP_CONCAT(REGION_NAME SEPARATOR ', ') FROM DISASTER_REGION WHERE DISASTER_ID = d.DISASTER_ID) AS AFFECTED_REGIONS FROM DISASTER d LEFT JOIN GOVT_AGENCY g ON d.AGENCY_ID = g.AGENCY_ID";
 
         try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -79,7 +98,12 @@ public class DisasterDAO {
                     stmt.executeUpdate();
                 }
 
-                // Finally delete the Disaster
+                // Finally delete from DISASTER_REGION and then DISASTER
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM DISASTER_REGION WHERE DISASTER_ID = ?")) {
+                    stmt.setInt(1, disasterId);
+                    stmt.executeUpdate();
+                }
+
                 try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM DISASTER WHERE DISASTER_ID = ?")) {
                     stmt.setInt(1, disasterId);
                     stmt.executeUpdate();

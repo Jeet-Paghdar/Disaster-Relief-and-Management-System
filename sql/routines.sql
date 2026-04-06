@@ -37,20 +37,14 @@ CREATE PROCEDURE sp_insert_person(
     IN p_first_name VARCHAR(50),
     IN p_last_name VARCHAR(50),
     IN p_dob DATE,
-    IN p_age INT,
     IN p_gender VARCHAR(10),
     IN p_email VARCHAR(100),
     IN p_phone_number VARCHAR(15),
     OUT p_out_person_id INT
 )
 BEGIN
-    -- If age is not provided but DOB is, calculate it dynamically
-    IF p_age IS NULL AND p_dob IS NOT NULL THEN
-        SET p_age = fn_calculate_age(p_dob);
-    END IF;
-
-    INSERT INTO person (first_name, last_name, dob, age, gender, email, phone_number)
-    VALUES (p_first_name, p_last_name, p_dob, p_age, p_gender, p_email, p_phone_number);
+    INSERT INTO person (first_name, last_name, dob, gender, email, phone_number)
+    VALUES (p_first_name, p_last_name, p_dob, p_gender, p_email, p_phone_number);
     
     SET p_out_person_id = LAST_INSERT_ID();
 END$$
@@ -60,7 +54,6 @@ CREATE PROCEDURE sp_register_victim(
     IN p_first_name VARCHAR(50),
     IN p_last_name VARCHAR(50),
     IN p_dob DATE,
-    IN p_age INT,
     IN p_gender VARCHAR(10),
     IN p_email VARCHAR(100),
     IN p_phone_number VARCHAR(15),
@@ -68,7 +61,8 @@ CREATE PROCEDURE sp_register_victim(
     IN p_address_after VARCHAR(200),
     IN p_injury_status VARCHAR(100),
     IN p_entry_date DATE,
-    IN p_disaster_id INT
+    IN p_disaster_id INT,
+    IN p_blood_type VARCHAR(5)
 )
 BEGIN
     DECLARE v_person_id INT;
@@ -78,12 +72,12 @@ BEGIN
 
     -- Insert into person base table and grab the returned ID
     CALL sp_insert_person(
-        p_first_name, p_last_name, p_dob, p_age, p_gender, p_email, p_phone_number, v_person_id
+        p_first_name, p_last_name, p_dob, p_gender, p_email, p_phone_number, v_person_id
     );
 
     -- Insert into victim table using the exact new person_id
-    INSERT INTO victim (victim_id, address_before, address_after, injury_status, entry_date, disaster_id)
-    VALUES (v_person_id, p_address_before, p_address_after, p_injury_status, p_entry_date, p_disaster_id);
+    INSERT INTO victim (victim_id, address_before, address_after, injury_status, entry_date, disaster_id, blood_type)
+    VALUES (v_person_id, p_address_before, p_address_after, p_injury_status, p_entry_date, p_disaster_id, p_blood_type);
 
     COMMIT;
 END$$
@@ -93,7 +87,6 @@ CREATE PROCEDURE sp_register_worker(
     IN p_first_name VARCHAR(50),
     IN p_last_name VARCHAR(50),
     IN p_dob DATE,
-    IN p_age INT,
     IN p_gender VARCHAR(10),
     IN p_email VARCHAR(100),
     IN p_phone_number VARCHAR(15),
@@ -107,7 +100,7 @@ BEGIN
 
     -- Call generic person insert
     CALL sp_insert_person(
-        p_first_name, p_last_name, p_dob, p_age, p_gender, p_email, p_phone_number, v_person_id
+        p_first_name, p_last_name, p_dob, p_gender, p_email, p_phone_number, v_person_id
     );
 
     -- Insert into social_worker
@@ -127,7 +120,7 @@ CREATE PROCEDURE sp_allocate_victim_supply(
 BEGIN
     -- Ensure we have enough global stock first
     DECLARE v_current_stock INT;
-    SELECT quantity INTO v_current_stock FROM supply WHERE supply_id = p_supply_id;
+    SELECT quantity INTO v_current_stock FROM supply_with_stock WHERE supply_id = p_supply_id;
 
     IF v_current_stock >= p_quantity_allocated THEN
         START TRANSACTION;
@@ -136,10 +129,7 @@ BEGIN
         INSERT INTO victim_supply (victim_id, supply_id, quantity_allocated, allocation_date)
         VALUES (p_victim_id, p_supply_id, p_quantity_allocated, p_allocation_date);
         
-        -- Deduct from global inventory automatically
-        UPDATE supply 
-        SET quantity = quantity - p_quantity_allocated 
-        WHERE supply_id = p_supply_id;
+        -- Note: We no longer manually update supply.quantity since SUPPLY_WITH_STOCK is a dynamically computed view.
         
         COMMIT;
     ELSE
@@ -151,16 +141,6 @@ END$$
 
 -- 3. TRIGGERS
 
-
--- Trigger: When location receives new supply stock, increase global supply total automatically!
-CREATE TRIGGER trg_update_global_supply_stock
-AFTER INSERT ON location_supply
-FOR EACH ROW
-BEGIN
-    UPDATE supply 
-    SET quantity = quantity + NEW.quantity_stored
-    WHERE supply_id = NEW.supply_id;
-END$$
 
 -- Trigger: Ensure medical records aren't dated in the future
 CREATE TRIGGER trg_validate_medical_date

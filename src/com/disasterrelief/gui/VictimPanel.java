@@ -56,16 +56,16 @@ public class VictimPanel extends JPanel {
         gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 1.0;
         formContainer.add(Box.createHorizontalGlue(), gbc);
  
-        // Row 1: Age & Gender
+        // Row 1: DOB & Gender
         gbc.gridy = 1;
         gbc.gridx = 0; gbc.weightx = 0.0;
-        formContainer.add(new JLabel("Age:"), gbc);
-        JTextField txtAge = new JTextField();
-        txtAge.setPreferredSize(fieldSize);
-        txtAge.setMinimumSize(fieldSize);
-        txtAge.setMargin(new Insets(5, 8, 5, 8));
+        formContainer.add(new JLabel("DOB (yyyy-mm-dd):"), gbc);
+        JTextField txtDob = new JTextField();
+        txtDob.setPreferredSize(fieldSize);
+        txtDob.setMinimumSize(fieldSize);
+        txtDob.setMargin(new Insets(5, 8, 5, 8));
         gbc.gridx = 1; 
-        formContainer.add(txtAge, gbc);
+        formContainer.add(txtDob, gbc);
  
         gbc.gridx = 2; 
         formContainer.add(new JLabel("Gender:"), gbc);
@@ -113,6 +113,16 @@ public class VictimPanel extends JPanel {
         gbc.gridx = 3; 
         formContainer.add(comboDiet, gbc);
 
+        // Row 4: Blood Type
+        gbc.gridy = 4;
+        gbc.gridx = 0; gbc.weightx = 0.0;
+        formContainer.add(new JLabel("Blood Type:"), gbc);
+        JComboBox<String> comboBlood = new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"});
+        comboBlood.setPreferredSize(fieldSize);
+        comboBlood.setMinimumSize(fieldSize);
+        gbc.gridx = 1; 
+        formContainer.add(comboBlood, gbc);
+
         // Buttons Row
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
         btnPanel.setBackground(Color.WHITE);
@@ -123,7 +133,7 @@ public class VictimPanel extends JPanel {
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
 
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0; gbc.gridy = 5;
         gbc.gridwidth = 4;
         gbc.weightx = 0.0;
         gbc.insets = new Insets(15, 10, 5, 10);
@@ -132,7 +142,7 @@ public class VictimPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // --- CENTER: Data Table ---
-        String[] columns = {"ID", "First Name", "Last Name", "Age", "Gender", "Injury", "Disaster ID"};
+        String[] columns = {"ID", "First Name", "Last Name", "DOB", "Gender", "Blood", "Disaster ID"};
         tableModel = new DefaultTableModel(columns, 0);
         victimTable = new JTable(tableModel);
         victimTable.setRowHeight(30);
@@ -149,7 +159,7 @@ public class VictimPanel extends JPanel {
         btnAdd.addActionListener(e -> {
             String fName = txtFirstName.getText().trim();
             String lName = txtLastName.getText().trim();
-            String ageStr = txtAge.getText().trim();
+            String dobStr = txtDob.getText().trim();
             String phone = txtPhone.getText().trim();
             String dIdStr = txtDisasterId.getText().trim();
 
@@ -163,9 +173,12 @@ public class VictimPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Invalid Last Name (use letters only).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            // 3. Validate Age
-            if (!ValidationUtils.isValidNumber(ageStr)) {
-                JOptionPane.showMessageDialog(this, "Invalid Age (must be a positive number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            // 3. Validate DOB
+            LocalDate dobDate;
+            try {
+                dobDate = LocalDate.parse(dobStr);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Invalid DOB format. Use YYYY-MM-DD.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             // 4. Validate Phone
@@ -179,19 +192,19 @@ public class VictimPanel extends JPanel {
                 return;
             }
 
-            int age = Integer.parseInt(ageStr);
             int disasterId = Integer.parseInt(dIdStr);
             
             try {
                 Victim v = new Victim();
                 v.setFirstName(txtFirstName.getText().trim());
                 v.setLastName(txtLastName.getText().trim());
-                v.setAge(age);
+                v.setDob(dobDate);
                 v.setInjuryStatus((String) comboInjury.getSelectedItem());
                 v.setPhoneNumber(txtPhone.getText().trim());
                 v.setEntryDate(LocalDate.now());
                 v.setDisasterId(disasterId);
                 v.setDietaryRestriction((String) comboDiet.getSelectedItem());
+                v.setBloodType((String) comboBlood.getSelectedItem());
                 
                 v.setGender((String) comboGender.getSelectedItem());
                 v.setAddressBefore("Unknown");
@@ -247,9 +260,9 @@ public class VictimPanel extends JPanel {
                         v.getPersonId(),
                         v.getFirstName(),
                         v.getLastName(),
-                        v.getAge(),
+                        v.getDob(),
                         v.getGender(),
-                        v.getInjuryStatus(),
+                        v.getBloodType(),
                         v.getDisasterId()
                 });
             }

@@ -15,16 +15,15 @@ public class SupplyDAO {
             throw new InvalidSupplyException("Quantity cannot be negative!");
         }
 
-        String supplySql = "INSERT INTO SUPPLY (ITEM_NAME, QUANTITY, TYPE, EXPIRY_DATE) VALUES (?, ?, ?, ?)";
+        String supplySql = "INSERT INTO SUPPLY (ITEM_NAME, TYPE, EXPIRY_DATE) VALUES (?, ?, ?)";
         String linkSql = "INSERT INTO LOCATION_SUPPLY (LOCATION_ID, SUPPLY_ID, QUANTITY_STORED) VALUES (?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement supplyStmt = conn.prepareStatement(supplySql, Statement.RETURN_GENERATED_KEYS)) {
                 supplyStmt.setString(1, supply.getItemName());
-                supplyStmt.setInt(2, supply.getQuantity());
-                supplyStmt.setString(3, supply.getType());
-                supplyStmt.setDate(4, supply.getExpiryDate() != null ? Date.valueOf(supply.getExpiryDate()) : null);
+                supplyStmt.setString(2, supply.getType());
+                supplyStmt.setDate(3, supply.getExpiryDate() != null ? Date.valueOf(supply.getExpiryDate()) : null);
                 supplyStmt.executeUpdate();
 
                 int supplyId = 0;
@@ -54,7 +53,7 @@ public class SupplyDAO {
 
     public List<Supply> getAllSupplies() throws SQLException {
         List<Supply> supplies = new ArrayList<>();
-        String sql = "SELECT * FROM SUPPLY";
+        String sql = "SELECT * FROM SUPPLY_WITH_STOCK";
 
         try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -77,18 +76,7 @@ public class SupplyDAO {
     }
 
     public void updateQuantity(int supplyId, int quantity) throws SQLException, InvalidSupplyException {
-        if (quantity < 0) {
-            throw new InvalidSupplyException("Quantity cannot be negative!");
-        }
-
-        String sql = "UPDATE SUPPLY SET QUANTITY = ? WHERE SUPPLY_ID = ?";
-
-        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, quantity);
-            stmt.setInt(2, supplyId);
-            stmt.executeUpdate();
-        }
+        throw new UnsupportedOperationException("Global quantity is now dynamically computed from allocations and stock.");
     }
 
     public void deleteSupply(int supplyId) throws SQLException {

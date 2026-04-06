@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 
 public class WorkerPanel extends JPanel {
@@ -47,10 +48,10 @@ public class WorkerPanel extends JPanel {
         txtLastName.setMinimumSize(fieldSize);
         txtLastName.setMargin(new Insets(5, 8, 5, 8));
 
-        JTextField txtAge = new JTextField();
-        txtAge.setPreferredSize(fieldSize);
-        txtAge.setMinimumSize(fieldSize);
-        txtAge.setMargin(new Insets(5, 8, 5, 8));
+        JTextField txtDob = new JTextField();
+        txtDob.setPreferredSize(fieldSize);
+        txtDob.setMinimumSize(fieldSize);
+        txtDob.setMargin(new Insets(5, 8, 5, 8));
 
         JTextField txtEmail = new JTextField();
         txtEmail.setPreferredSize(fieldSize);
@@ -72,12 +73,12 @@ public class WorkerPanel extends JPanel {
         gbc.gridx = 3; 
         formContainer.add(txtLastName, gbc);
 
-        // Row 1: Age & Email
+        // Row 1: DOB & Email
         gbc.gridy = 1;
         gbc.gridx = 0; 
-        formContainer.add(new JLabel("Age:"), gbc);
+        formContainer.add(new JLabel("DOB (yyyy-mm-dd):"), gbc);
         gbc.gridx = 1; 
-        formContainer.add(txtAge, gbc);
+        formContainer.add(txtDob, gbc);
         gbc.gridx = 2; 
         formContainer.add(new JLabel("Email:"), gbc);
         gbc.gridx = 3; 
@@ -125,7 +126,7 @@ public class WorkerPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = { "ID", "First Name", "Last Name", "Age", "Email", "Specialty", "Shift" };
+        String[] cols = { "ID", "First Name", "Last Name", "DOB", "Email", "Specialty", "Shift" };
         tableModel = new DefaultTableModel(cols, 0);
         workerTable = new JTable(tableModel);
         workerTable.setRowHeight(30);
@@ -142,7 +143,7 @@ public class WorkerPanel extends JPanel {
         btnAdd.addActionListener(e -> {
             String fName = txtFirstName.getText().trim();
             String lName = txtLastName.getText().trim();
-            String ageStr = txtAge.getText().trim();
+            String dobStr = txtDob.getText().trim();
             String email = txtEmail.getText().trim();
             String specialty = txtSpecialty.getText().trim();
 
@@ -154,8 +155,11 @@ public class WorkerPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Invalid Last Name.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (!ValidationUtils.isValidNumber(ageStr)) {
-                JOptionPane.showMessageDialog(this, "Invalid Age.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            LocalDate dobDate;
+            try {
+                dobDate = LocalDate.parse(dobStr);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Invalid DOB format.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (!ValidationUtils.isValidEmail(email)) {
@@ -171,7 +175,7 @@ public class WorkerPanel extends JPanel {
                 SocialWorker sw = new SocialWorker();
                 sw.setFirstName(fName);
                 sw.setLastName(lName);
-                sw.setAge(Integer.parseInt(ageStr));
+                sw.setDob(dobDate);
                 sw.setEmail(email);
                 sw.setSpecialisation(specialty);
                 sw.setWorkShift((String) comboShift.getSelectedItem());
@@ -215,7 +219,7 @@ public class WorkerPanel extends JPanel {
             for (SocialWorker w : workers) {
                 tableModel.addRow(new Object[] {
                         w.getEmployeeId(), w.getFirstName(), w.getLastName(),
-                        w.getAge(), w.getEmail(),
+                        w.getDob(), w.getEmail(),
                         w.getSpecialisation(), w.getWorkShift()
                 });
             }

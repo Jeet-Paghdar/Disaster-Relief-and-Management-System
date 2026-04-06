@@ -42,11 +42,6 @@ public class MedicalPanel extends JPanel {
         txtVictimId.setMinimumSize(fieldSize);
         txtVictimId.setMargin(new Insets(5, 8, 5, 8));
 
-        JTextField txtBloodType = new JTextField();
-        txtBloodType.setPreferredSize(fieldSize);
-        txtBloodType.setMinimumSize(fieldSize);
-        txtBloodType.setMargin(new Insets(5, 8, 5, 8));
-
         JTextField txtTreatments = new JTextField();
         txtTreatments.setPreferredSize(fieldSize);
         txtTreatments.setMinimumSize(fieldSize);
@@ -64,20 +59,15 @@ public class MedicalPanel extends JPanel {
         formContainer.add(txtVictimId, gbc);
         
         gbc.gridx = 2; 
-        formContainer.add(new JLabel("Blood Type:"), gbc);
+        formContainer.add(new JLabel("Treatments:"), gbc);
         gbc.gridx = 3; 
-        formContainer.add(txtBloodType, gbc);
+        formContainer.add(txtTreatments, gbc);
 
         // Row 1
         gbc.gridy = 1;
         gbc.gridx = 0; 
-        formContainer.add(new JLabel("Treatments:"), gbc);
-        gbc.gridx = 1; 
-        formContainer.add(txtTreatments, gbc);
-        
-        gbc.gridx = 2; 
         formContainer.add(new JLabel("Worker ID:"), gbc);
-        gbc.gridx = 3; 
+        gbc.gridx = 1; 
         formContainer.add(txtWorkerId, gbc);
 
         // Row 2: Buttons
@@ -98,7 +88,7 @@ public class MedicalPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"Record Number", "Victim ID", "Blood Type", "Treatments", "Date", "Worker ID"};
+        String[] cols = {"Record Number", "Victim ID", "Treatments", "Date", "Worker ID"};
         tableModel = new DefaultTableModel(cols, 0);
         medicalTable = new JTable(tableModel);
         medicalTable.setRowHeight(30);
@@ -114,16 +104,11 @@ public class MedicalPanel extends JPanel {
         // Actions
         btnAdd.addActionListener(e -> {
             String vIdStr = txtVictimId.getText().trim();
-            String blood = txtBloodType.getText().trim();
             String treats = txtTreatments.getText().trim();
             String wIdStr = txtWorkerId.getText().trim();
 
             if (!ValidationUtils.isValidNumber(vIdStr)) {
                 JOptionPane.showMessageDialog(this, "Invalid Victim ID (must be a number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isNotEmpty(blood)) {
-                JOptionPane.showMessageDialog(this, "Invalid Blood Type (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (!ValidationUtils.isNotEmpty(treats)) {
@@ -137,7 +122,7 @@ public class MedicalPanel extends JPanel {
 
             try {
                 MedicalRecord record = new MedicalRecord(
-                        0, Integer.parseInt(vIdStr), blood, "Prescription TBD", 
+                        0, Integer.parseInt(vIdStr), "Blood Type from Victim", "Prescription TBD", 
                         treats, LocalDate.now(), Integer.parseInt(wIdStr)
                 );
 
@@ -182,7 +167,7 @@ public class MedicalPanel extends JPanel {
             List<MedicalRecord> records = medicalDAO.getAllMedicalRecords();
             for (MedicalRecord m : records) {
                 tableModel.addRow(new Object[]{
-                        m.getRecordNumber(), m.getVictimId(), m.getBloodType(), 
+                        m.getRecordNumber(), m.getVictimId(),
                         m.getTreatmentDetails(), m.getTreatmentDate(), m.getWorkerId()
                 });
             }

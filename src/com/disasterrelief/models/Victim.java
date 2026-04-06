@@ -10,6 +10,7 @@ public class Victim extends Person {
     private LocalDate entryDate;
     private int disasterId;
     private String dietaryRestriction;
+    private String bloodType;
 
     public Victim() {
     }
@@ -74,6 +75,14 @@ public class Victim extends Person {
 
     public void setDietaryRestriction(String dietaryRestriction) {
         this.dietaryRestriction = dietaryRestriction;
+    }
+
+    public String getBloodType() {
+        return bloodType;
+    }
+
+    public void setBloodType(String bloodType) {
+        this.bloodType = bloodType;
     }
 
     @Override

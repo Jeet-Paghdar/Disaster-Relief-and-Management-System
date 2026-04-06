@@ -10,8 +10,8 @@ import java.util.List;
 public class VictimDAO {
 
     public void addVictim(Victim victim) throws SQLException {
-        String personSQL = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, DOB, AGE, GENDER, EMAIL, PHONE_NUMBER) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        String victimSQL = "INSERT INTO VICTIM (VICTIM_ID, ADDRESS_BEFORE, ADDRESS_AFTER, INJURY_STATUS, ENTRY_DATE, DISASTER_ID) VALUES (?, ?, ?, ?, ?, ?)";
+        String personSQL = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, DOB, GENDER, EMAIL, PHONE_NUMBER) VALUES (?, ?, ?, ?, ?, ?)";
+        String victimSQL = "INSERT INTO VICTIM (VICTIM_ID, ADDRESS_BEFORE, ADDRESS_AFTER, INJURY_STATUS, ENTRY_DATE, DISASTER_ID, BLOOD_TYPE) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false); // Start transaction
@@ -21,10 +21,9 @@ public class VictimDAO {
                 personStmt.setString(1, victim.getFirstName());
                 personStmt.setString(2, victim.getLastName());
                 personStmt.setDate(3, victim.getDob() != null ? Date.valueOf(victim.getDob()) : null);
-                personStmt.setInt(4, victim.getAge());
-                personStmt.setString(5, victim.getGender());
-                personStmt.setString(6, victim.getEmail());
-                personStmt.setString(7, victim.getPhoneNumber());
+                personStmt.setString(4, victim.getGender());
+                personStmt.setString(5, victim.getEmail());
+                personStmt.setString(6, victim.getPhoneNumber());
                 personStmt.executeUpdate();
 
                 int personId;
@@ -42,6 +41,7 @@ public class VictimDAO {
                     victimStmt.setString(4, victim.getInjuryStatus());
                     victimStmt.setDate(5, victim.getEntryDate() != null ? Date.valueOf(victim.getEntryDate()) : null);
                     victimStmt.setInt(6, victim.getDisasterId());
+                    victimStmt.setString(7, victim.getBloodType());
                     victimStmt.executeUpdate();
                 }
 
@@ -72,7 +72,7 @@ public class VictimDAO {
 
     public List<Victim> getAllVictims() throws SQLException {
         List<Victim> victims = new ArrayList<>();
-        String sql = "SELECT p.*, v.ADDRESS_BEFORE, v.ADDRESS_AFTER, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, dr.RESTRICTION_TYPE "
+        String sql = "SELECT p.*, fn_calculate_age(p.DOB) AS AGE, v.ADDRESS_BEFORE, v.ADDRESS_AFTER, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, v.BLOOD_TYPE, dr.RESTRICTION_TYPE "
                 + "FROM PERSON p JOIN VICTIM v ON p.PERSON_ID = v.VICTIM_ID "
                 + "LEFT JOIN VICTIM_DIETARY_RESTRICTIONS dr ON v.VICTIM_ID = dr.VICTIM_ID";
 
@@ -87,7 +87,7 @@ public class VictimDAO {
 
     public List<Victim> searchVictimsByName(String firstName) throws SQLException {
         List<Victim> victims = new ArrayList<>();
-        String sql = "SELECT p.*, v.ADDRESS_BEFORE, v.ADDRESS_AFTER, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, dr.RESTRICTION_TYPE "
+        String sql = "SELECT p.*, fn_calculate_age(p.DOB) AS AGE, v.ADDRESS_BEFORE, v.ADDRESS_AFTER, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, v.BLOOD_TYPE, dr.RESTRICTION_TYPE "
                 + "FROM PERSON p JOIN VICTIM v ON p.PERSON_ID = v.VICTIM_ID "
                 + "LEFT JOIN VICTIM_DIETARY_RESTRICTIONS dr ON v.VICTIM_ID = dr.VICTIM_ID "
                 + "WHERE p.FIRST_NAME LIKE ?";
@@ -196,6 +196,7 @@ public class VictimDAO {
                 entryDate,
                 rs.getInt("DISASTER_ID")
         );
+        victim.setBloodType(rs.getString("BLOOD_TYPE"));
 
         String dietary = rs.getString("RESTRICTION_TYPE");
         if (dietary != null) {

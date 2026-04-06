@@ -4,8 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class DBConnection 
-{
+public class DBConnection {
 
     private static final String URL = "jdbc:mysql://localhost:3306/DisasterReliefDB";
     private static final String USER = "root";
@@ -13,12 +12,9 @@ public class DBConnection
 
     private static Connection connection = null;
 
-    public static Connection getConnection() throws SQLException 
-    {
-        if (connection == null || connection.isClosed()) 
-        {
-            try 
-            {
+    public static Connection getConnection() throws SQLException {
+        if (connection == null || connection.isClosed()) {
+            try {
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(URL, USER, PASSWORD);
             } catch (ClassNotFoundException e) {
@@ -28,15 +24,11 @@ public class DBConnection
         return connection;
     }
 
-    public static void closeConnection() 
-    {
-        if (connection != null) 
-        {
-            try 
-            {
+    public static void closeConnection() {
+        if (connection != null) {
+            try {
                 connection.close();
-            } catch (SQLException e) 
-            {
+            } catch (SQLException e) {
                 System.out.println("Error closing connection: " + e.getMessage());
             }
         }

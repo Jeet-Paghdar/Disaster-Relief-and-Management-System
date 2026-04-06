@@ -82,6 +82,44 @@ public class WorkerDAO {
         return workers;
     }
 
+    public void updateWorker(SocialWorker worker) throws SQLException {
+        String personSQL = "UPDATE PERSON SET FIRST_NAME = ?, LAST_NAME = ?, DOB = ?, GENDER = ?, EMAIL = ?, PHONE_NUMBER = ? WHERE PERSON_ID = ?";
+        String workerSQL = "UPDATE SOCIAL_WORKER SET SPECIALISATION = ?, WORK_SHIFT = ? WHERE EMPLOYEE_ID = ?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false); // Start transaction
+
+            try {
+                // Update PERSON table
+                try (PreparedStatement personStmt = conn.prepareStatement(personSQL)) {
+                    personStmt.setString(1, worker.getFirstName());
+                    personStmt.setString(2, worker.getLastName());
+                    personStmt.setDate(3, worker.getDob() != null ? Date.valueOf(worker.getDob()) : null);
+                    personStmt.setString(4, worker.getGender());
+                    personStmt.setString(5, worker.getEmail());
+                    personStmt.setString(6, worker.getPhoneNumber());
+                    personStmt.setInt(7, worker.getPersonId());
+                    personStmt.executeUpdate();
+                }
+
+                // Update SOCIAL_WORKER table
+                try (PreparedStatement workerStmt = conn.prepareStatement(workerSQL)) {
+                    workerStmt.setString(1, worker.getSpecialisation());
+                    workerStmt.setString(2, worker.getWorkShift());
+                    workerStmt.setInt(3, worker.getEmployeeId());
+                    workerStmt.executeUpdate();
+                }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
     public void updateWorkShift(int employeeId, String workShift) throws SQLException {
         String sql = "UPDATE SOCIAL_WORKER SET WORK_SHIFT = ? WHERE EMPLOYEE_ID = ?";
 

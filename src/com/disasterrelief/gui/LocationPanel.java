@@ -56,7 +56,7 @@ public class LocationPanel extends JPanel {
         txtCapacity.setMinimumSize(fieldSize);
         txtCapacity.setMargin(new Insets(5, 8, 5, 8));
 
-        JComboBox<String> comboType = new JComboBox<>(new String[]{"Shelter", "Hospital", "Warehouse"});
+        JComboBox<String> comboType = new JComboBox<>(new String[]{"Shelter", "Hospital", "Supply Center"});
         comboType.setPreferredSize(fieldSize);
         comboType.setMinimumSize(fieldSize);
 
@@ -89,9 +89,11 @@ public class LocationPanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Location");
+        JButton btnUpdate = new JButton("Update Selected");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
         btnPanel.add(btnAdd);
+        btnPanel.add(btnUpdate);
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
 
@@ -106,7 +108,12 @@ public class LocationPanel extends JPanel {
 
         // Table
         String[] cols = {"Loc ID", "Name", "Address", "Type", "Pincode", "Capacity"};
-        tableModel = new DefaultTableModel(cols, 0);
+        tableModel = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         locationTable = new JTable(tableModel);
         locationTable.setRowHeight(30);
         locationTable.setFillsViewportHeight(true);
@@ -125,20 +132,9 @@ public class LocationPanel extends JPanel {
             String pincode = txtPincode.getText().trim();
             String capacityStr = txtCapacity.getText().trim();
 
-            if (!ValidationUtils.isNotEmpty(name)) {
-                JOptionPane.showMessageDialog(this, "Invalid Name (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isNotEmpty(address)) {
-                JOptionPane.showMessageDialog(this, "Invalid Address (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isValidPincode(pincode)) {
-                JOptionPane.showMessageDialog(this, "Invalid Pincode (must be exactly 6 digits).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isValidNumber(capacityStr)) {
-                JOptionPane.showMessageDialog(this, "Invalid Capacity (must be a positive number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            if (!ValidationUtils.isNotEmpty(name) || !ValidationUtils.isNotEmpty(address) || 
+                !ValidationUtils.isValidPincode(pincode) || !ValidationUtils.isValidNumber(capacityStr)) {
+                JOptionPane.showMessageDialog(this, "Please fix validation errors.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -151,10 +147,84 @@ public class LocationPanel extends JPanel {
                 loc.setCapacity(Integer.parseInt(capacityStr));
 
                 locationDAO.addLocation(loc);
+                JOptionPane.showMessageDialog(this, "Location Added Successfully!");
                 loadTableData();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
+        });
+
+        btnUpdate.addActionListener(e -> {
+            int row = locationTable.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a location to update.");
+                return;
+            }
+
+            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Update Location", true);
+            dialog.setSize(400, 300);
+            dialog.setLayout(new BorderLayout());
+            dialog.setLocationRelativeTo(this);
+
+            JPanel form = new JPanel(new GridLayout(5, 2, 10, 10));
+            form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+            JTextField updateName = new JTextField(tableModel.getValueAt(row, 1).toString());
+            JTextField updateAddr = new JTextField(tableModel.getValueAt(row, 2).toString());
+            JComboBox<String> updateType = new JComboBox<>(new String[]{"Shelter", "Hospital", "Supply Center"});
+            updateType.setSelectedItem(tableModel.getValueAt(row, 3).toString());
+            JTextField updatePincode = new JTextField(tableModel.getValueAt(row, 4).toString());
+            JTextField updateCapacity = new JTextField(tableModel.getValueAt(row, 5).toString());
+
+            form.add(new JLabel("Name:")); form.add(updateName);
+            form.add(new JLabel("Address:")); form.add(updateAddr);
+            form.add(new JLabel("Type:")); form.add(updateType);
+            form.add(new JLabel("Pincode:")); form.add(updatePincode);
+            form.add(new JLabel("Capacity:")); form.add(updateCapacity);
+
+            dialog.add(form, BorderLayout.CENTER);
+
+            JPanel btnGrid = new JPanel();
+            JButton saveBtn = new JButton("Save");
+            JButton cancelBtn = new JButton("Cancel");
+            btnGrid.add(saveBtn);
+            btnGrid.add(cancelBtn);
+            dialog.add(btnGrid, BorderLayout.SOUTH);
+
+            cancelBtn.addActionListener(ev -> dialog.dispose());
+
+            saveBtn.addActionListener(ev -> {
+                String name = updateName.getText().trim();
+                String address = updateAddr.getText().trim();
+                String pincode = updatePincode.getText().trim();
+                String capacityStr = updateCapacity.getText().trim();
+
+                if (!ValidationUtils.isNotEmpty(name) || !ValidationUtils.isNotEmpty(address) || 
+                    !ValidationUtils.isValidPincode(pincode) || !ValidationUtils.isValidNumber(capacityStr)) {
+                    JOptionPane.showMessageDialog(dialog, "Please fix validation errors before updating.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                try {
+                    int id = (int) tableModel.getValueAt(row, 0);
+                    Location loc = new Location();
+                    loc.setLocationId(id);
+                    loc.setName(name);
+                    loc.setAddress(address);
+                    loc.setType((String) updateType.getSelectedItem());
+                    loc.setPincode(pincode);
+                    loc.setCapacity(Integer.parseInt(capacityStr));
+
+                    locationDAO.updateLocation(loc);
+                    JOptionPane.showMessageDialog(dialog, "Location Updated Successfully!");
+                    dialog.dispose();
+                    loadTableData();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+                }
+            });
+
+            dialog.setVisible(true);
         });
 
         btnDelete.addActionListener(e -> {
@@ -182,6 +252,20 @@ public class LocationPanel extends JPanel {
         });
 
         btnRefresh.addActionListener(e -> loadTableData());
+
+        // Row Selection Listener
+        locationTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = locationTable.getSelectedRow();
+                if (row >= 0) {
+                    txtName.setText(tableModel.getValueAt(row, 1).toString());
+                    txtAddr.setText(tableModel.getValueAt(row, 2).toString());
+                    comboType.setSelectedItem(tableModel.getValueAt(row, 3).toString());
+                    txtPincode.setText(tableModel.getValueAt(row, 4).toString());
+                    txtCapacity.setText(tableModel.getValueAt(row, 5).toString());
+                }
+            }
+        });
 
         loadTableData();
     }

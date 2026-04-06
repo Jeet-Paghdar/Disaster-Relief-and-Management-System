@@ -79,9 +79,11 @@ public class DisasterPanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Disaster");
+        JButton btnUpdate = new JButton("Update Selected");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
         btnPanel.add(btnAdd);
+        btnPanel.add(btnUpdate);
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
 
@@ -94,7 +96,12 @@ public class DisasterPanel extends JPanel {
 
         // Table
         String[] cols = {"Disaster ID", "Type", "Severity", "Affected Regions", "Handling Agency"};
-        tableModel = new DefaultTableModel(cols, 0);
+        tableModel = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         disasterTable = new JTable(tableModel);
         disasterTable.setRowHeight(30);
         disasterTable.setFillsViewportHeight(true);
@@ -111,12 +118,8 @@ public class DisasterPanel extends JPanel {
             String type = txtType.getText().trim();
             String regions = txtRegions.getText().trim();
 
-            if (!ValidationUtils.isNotEmpty(type)) {
-                JOptionPane.showMessageDialog(this, "Invalid Type (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isNotEmpty(regions)) {
-                JOptionPane.showMessageDialog(this, "Invalid Regions (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            if (!ValidationUtils.isNotEmpty(type) || !ValidationUtils.isNotEmpty(regions)) {
+                JOptionPane.showMessageDialog(this, "Please fix validation errors.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -126,7 +129,6 @@ public class DisasterPanel extends JPanel {
                 d.setSeverity((String) comboSeverity.getSelectedItem());
                 d.setAffectedRegions(regions);
                 
-                // Parse agency ID from the combo box choice (e.g., "1 - NDMA" -> 1)
                 String selectedAgency = (String) comboAgency.getSelectedItem();
                 int agencyId = 1;
                 if (selectedAgency != null) {
@@ -135,11 +137,90 @@ public class DisasterPanel extends JPanel {
                 d.setAgencyId(agencyId); 
 
                 disasterDAO.addDisaster(d);
-                JOptionPane.showMessageDialog(this, "Disaster Added! You can now link Victims to this new Disaster ID.");
+                JOptionPane.showMessageDialog(this, "Disaster Added Successfully!");
                 loadTableData();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
+        });
+
+        btnUpdate.addActionListener(e -> {
+            int row = disasterTable.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a disaster to update.");
+                return;
+            }
+
+            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Update Disaster", true);
+            dialog.setSize(400, 300);
+            dialog.setLayout(new BorderLayout());
+            dialog.setLocationRelativeTo(this);
+
+            JPanel form = new JPanel(new GridLayout(4, 2, 10, 10));
+            form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+            JTextField updateType = new JTextField(tableModel.getValueAt(row, 1).toString());
+            JComboBox<String> updateSeverity = new JComboBox<>(new String[]{"High", "Moderate", "Low"});
+            updateSeverity.setSelectedItem(tableModel.getValueAt(row, 2).toString());
+            JTextField updateRegions = new JTextField(tableModel.getValueAt(row, 3).toString());
+            JComboBox<String> updateAgency = new JComboBox<>(new String[]{"1 - NDMA", "2 - NDRF", "3 - NIDM"});
+            
+            String currentAgencyName = tableModel.getValueAt(row, 4) != null ? tableModel.getValueAt(row, 4).toString() : "";
+            for (int i = 0; i < updateAgency.getItemCount(); i++) {
+                if (updateAgency.getItemAt(i).contains(currentAgencyName)) {
+                    updateAgency.setSelectedIndex(i);
+                    break;
+                }
+            }
+
+            form.add(new JLabel("Type:")); form.add(updateType);
+            form.add(new JLabel("Severity:")); form.add(updateSeverity);
+            form.add(new JLabel("Affected Regions:")); form.add(updateRegions);
+            form.add(new JLabel("Control Agency:")); form.add(updateAgency);
+
+            dialog.add(form, BorderLayout.CENTER);
+
+            JPanel btnGrid = new JPanel();
+            JButton saveBtn = new JButton("Save");
+            JButton cancelBtn = new JButton("Cancel");
+            btnGrid.add(saveBtn);
+            btnGrid.add(cancelBtn);
+            dialog.add(btnGrid, BorderLayout.SOUTH);
+
+            cancelBtn.addActionListener(ev -> dialog.dispose());
+
+            saveBtn.addActionListener(ev -> {
+                String type = updateType.getText().trim();
+                String regions = updateRegions.getText().trim();
+
+                if (!ValidationUtils.isNotEmpty(type) || !ValidationUtils.isNotEmpty(regions)) {
+                    JOptionPane.showMessageDialog(dialog, "Please fix validation errors before updating.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                try {
+                    int id = (int) tableModel.getValueAt(row, 0);
+                    Disaster d = new Disaster();
+                    d.setDisasterId(id);
+                    d.setType(type);
+                    d.setSeverity((String) updateSeverity.getSelectedItem());
+                    d.setAffectedRegions(regions);
+                    
+                    String selectedAgency = (String) updateAgency.getSelectedItem();
+                    if (selectedAgency != null) {
+                        d.setAgencyId(Integer.parseInt(selectedAgency.split(" - ")[0]));
+                    }
+
+                    disasterDAO.updateDisaster(d);
+                    JOptionPane.showMessageDialog(dialog, "Disaster Updated Successfully!");
+                    dialog.dispose();
+                    loadTableData();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+                }
+            });
+
+            dialog.setVisible(true);
         });
 
         btnDelete.addActionListener(e -> {
@@ -169,6 +250,21 @@ public class DisasterPanel extends JPanel {
         });
 
         btnRefresh.addActionListener(e -> loadTableData());
+
+        // Row Selection Listener
+        disasterTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = disasterTable.getSelectedRow();
+                if (row >= 0) {
+                    txtType.setText(tableModel.getValueAt(row, 1).toString());
+                    comboSeverity.setSelectedItem(tableModel.getValueAt(row, 2).toString());
+                    txtRegions.setText(tableModel.getValueAt(row, 3).toString());
+                    
+                    // Note: Agency matching might be tricky if names change, but ID is usually stable.
+                    // For now, we'll just leave it or match by name if possible.
+                }
+            }
+        });
 
         loadTableData();
     }

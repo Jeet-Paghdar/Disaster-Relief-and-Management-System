@@ -25,62 +25,66 @@ public class MedicalPanel extends JPanel {
         // Form
         JPanel formContainer = new JPanel(new GridBagLayout());
         formContainer.setBackground(Color.WHITE);
-        formContainer.setBorder(BorderFactory.createTitledBorder("Add Medical Record"));
+        formContainer.setBorder(BorderFactory.createTitledBorder("Medical Record Management"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 10, 8, 10);
-        gbc.fill = GridBagConstraints.NONE; // Prevents stretching
+        gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
-
-        // Adaptive Pinning: Right Glue (Column 4)
-        gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 1.0;
-        formContainer.add(Box.createHorizontalGlue(), gbc);
 
         Dimension fieldSize = new Dimension(150, 30);
 
         JTextField txtVictimId = new JTextField();
         txtVictimId.setPreferredSize(fieldSize);
-        txtVictimId.setMinimumSize(fieldSize);
-        txtVictimId.setMargin(new Insets(5, 8, 5, 8));
-
+        JTextField txtBloodType = new JTextField();
+        txtBloodType.setPreferredSize(fieldSize);
+        JTextField txtPrescriptions = new JTextField();
+        txtPrescriptions.setPreferredSize(fieldSize);
         JTextField txtTreatments = new JTextField();
         txtTreatments.setPreferredSize(fieldSize);
-        txtTreatments.setMinimumSize(fieldSize);
-        txtTreatments.setMargin(new Insets(5, 8, 5, 8));
-
         JTextField txtWorkerId = new JTextField();
         txtWorkerId.setPreferredSize(fieldSize);
-        txtWorkerId.setMinimumSize(fieldSize);
-        txtWorkerId.setMargin(new Insets(5, 8, 5, 8));
 
-        // Row 0
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        // Row 0: Victim ID & Blood Type
+        gbc.gridx = 0; gbc.gridy = 0;
         formContainer.add(new JLabel("Victim ID:"), gbc);
         gbc.gridx = 1; 
         formContainer.add(txtVictimId, gbc);
-        
         gbc.gridx = 2; 
-        formContainer.add(new JLabel("Treatments:"), gbc);
+        formContainer.add(new JLabel("Blood Type:"), gbc);
         gbc.gridx = 3; 
+        formContainer.add(txtBloodType, gbc);
+
+        // Row 1: Prescriptions & Treatments
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        formContainer.add(new JLabel("Prescriptions:"), gbc);
+        gbc.gridx = 1;
+        formContainer.add(txtPrescriptions, gbc);
+        gbc.gridx = 2;
+        formContainer.add(new JLabel("Treatments:"), gbc);
+        gbc.gridx = 3;
         formContainer.add(txtTreatments, gbc);
 
-        // Row 1
-        gbc.gridy = 1;
-        gbc.gridx = 0; 
+        // Row 2: Worker ID
+        gbc.gridy = 2;
+        gbc.gridx = 0;
         formContainer.add(new JLabel("Worker ID:"), gbc);
-        gbc.gridx = 1; 
+        gbc.gridx = 1;
         formContainer.add(txtWorkerId, gbc);
 
-        // Row 2: Buttons
+        // Row 3: Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Record");
+        JButton btnUpdate = new JButton("Update Selected");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
         btnPanel.add(btnAdd);
+        btnPanel.add(btnUpdate);
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 4;
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 4;
         gbc.weightx = 1.0;
         gbc.insets = new Insets(15, 10, 5, 10);
         formContainer.add(btnPanel, gbc);
@@ -88,13 +92,17 @@ public class MedicalPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"Record Number", "Victim ID", "Treatments", "Date", "Worker ID"};
-        tableModel = new DefaultTableModel(cols, 0);
+        String[] cols = {"Record #", "Victim ID", "Blood", "Prescriptions", "Treatments", "Date", "Worker ID"};
+        tableModel = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         medicalTable = new JTable(tableModel);
         medicalTable.setRowHeight(30);
         medicalTable.setFillsViewportHeight(true);
         
-        // Brighter Header
         medicalTable.getTableHeader().setBackground(new Color(30, 48, 80));
         medicalTable.getTableHeader().setForeground(Color.WHITE);
         medicalTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -104,51 +112,106 @@ public class MedicalPanel extends JPanel {
         // Actions
         btnAdd.addActionListener(e -> {
             String vIdStr = txtVictimId.getText().trim();
+            String blood = txtBloodType.getText().trim();
+            String pres = txtPrescriptions.getText().trim();
             String treats = txtTreatments.getText().trim();
             String wIdStr = txtWorkerId.getText().trim();
 
-            if (!ValidationUtils.isValidNumber(vIdStr)) {
-                JOptionPane.showMessageDialog(this, "Invalid Victim ID (must be a number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isNotEmpty(treats)) {
-                JOptionPane.showMessageDialog(this, "Invalid Treatments (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isValidNumber(wIdStr)) {
-                JOptionPane.showMessageDialog(this, "Invalid Worker ID (must be a number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            if (!ValidationUtils.isValidNumber(vIdStr) || !ValidationUtils.isNotEmpty(blood) || 
+                !ValidationUtils.isNotEmpty(treats) || !ValidationUtils.isValidNumber(wIdStr)) {
+                JOptionPane.showMessageDialog(this, "Please check Victim ID, Blood Type, Treatments, and Worker ID.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             try {
                 MedicalRecord record = new MedicalRecord(
-                        0, Integer.parseInt(vIdStr), "Blood Type from Victim", "Prescription TBD", 
+                        0, Integer.parseInt(vIdStr), blood, pres, 
                         treats, LocalDate.now(), Integer.parseInt(wIdStr)
                 );
-
                 medicalDAO.addMedicalRecord(record);
-                JOptionPane.showMessageDialog(this, "Medical Record Added");
+                JOptionPane.showMessageDialog(this, "Medical Record Added Successfully!");
                 loadTableData();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
         });
 
+        btnUpdate.addActionListener(e -> {
+            int row = medicalTable.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a record to update.");
+                return;
+            }
+
+            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Update Medical Record", true);
+            dialog.setSize(400, 200);
+            dialog.setLayout(new BorderLayout());
+            dialog.setLocationRelativeTo(this);
+
+            JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
+            form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+            JTextField updateBlood = new JTextField(tableModel.getValueAt(row, 2).toString());
+            JTextField updatePres = new JTextField(tableModel.getValueAt(row, 3).toString());
+            JTextField updateTreats = new JTextField(tableModel.getValueAt(row, 4).toString());
+
+            form.add(new JLabel("Blood Type:")); form.add(updateBlood);
+            form.add(new JLabel("Prescriptions:")); form.add(updatePres);
+            form.add(new JLabel("Treatments:")); form.add(updateTreats);
+
+            dialog.add(form, BorderLayout.CENTER);
+
+            JPanel btnGrid = new JPanel();
+            JButton saveBtn = new JButton("Save");
+            JButton cancelBtn = new JButton("Cancel");
+            btnGrid.add(saveBtn);
+            btnGrid.add(cancelBtn);
+            dialog.add(btnGrid, BorderLayout.SOUTH);
+
+            cancelBtn.addActionListener(ev -> dialog.dispose());
+
+            saveBtn.addActionListener(ev -> {
+                String blood = updateBlood.getText().trim();
+                String pres = updatePres.getText().trim();
+                String treats = updateTreats.getText().trim();
+
+                if (!ValidationUtils.isNotEmpty(blood) || !ValidationUtils.isNotEmpty(treats)) {
+                    JOptionPane.showMessageDialog(dialog, "Blood Type and Treatments are required for update.");
+                    return;
+                }
+
+                try {
+                    int recordId = (int) tableModel.getValueAt(row, 0);
+                    MedicalRecord record = new MedicalRecord();
+                    record.setRecordNumber(recordId);
+                    record.setVictimId((int) tableModel.getValueAt(row, 1));
+                    record.setBloodType(blood);
+                    record.setPrescriptions(pres);
+                    record.setTreatmentDetails(treats);
+
+                    medicalDAO.updateMedicalRecord(record);
+                    JOptionPane.showMessageDialog(dialog, "Medical Record Updated Successfully!");
+                    dialog.dispose();
+                    loadTableData();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+                }
+            });
+
+            dialog.setVisible(true);
+        });
+
         btnDelete.addActionListener(e -> {
             int row = medicalTable.getSelectedRow();
             if (row < 0) {
-                JOptionPane.showMessageDialog(this, "Please select a medical record to delete.");
+                JOptionPane.showMessageDialog(this, "Please select a record to delete.");
                 return;
             }
             int id = (int) tableModel.getValueAt(row, 0);
-            int confirm = JOptionPane.showConfirmDialog(this, 
-                "Are you sure you want to delete this medical record?\nThis action cannot be undone.", 
-                "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            
+            int confirm = JOptionPane.showConfirmDialog(this, "Delete this record?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     medicalDAO.deleteMedicalRecord(id);
-                    JOptionPane.showMessageDialog(this, "Medical Record deleted.");
                     loadTableData();
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
@@ -157,6 +220,19 @@ public class MedicalPanel extends JPanel {
         });
 
         btnRefresh.addActionListener(e -> loadTableData());
+
+        medicalTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = medicalTable.getSelectedRow();
+                if (row >= 0) {
+                    txtVictimId.setText(tableModel.getValueAt(row, 1).toString());
+                    txtBloodType.setText(tableModel.getValueAt(row, 2).toString());
+                    txtPrescriptions.setText(tableModel.getValueAt(row, 3).toString());
+                    txtTreatments.setText(tableModel.getValueAt(row, 4).toString());
+                    txtWorkerId.setText(tableModel.getValueAt(row, 6).toString());
+                }
+            }
+        });
 
         loadTableData();
     }
@@ -167,8 +243,8 @@ public class MedicalPanel extends JPanel {
             List<MedicalRecord> records = medicalDAO.getAllMedicalRecords();
             for (MedicalRecord m : records) {
                 tableModel.addRow(new Object[]{
-                        m.getRecordNumber(), m.getVictimId(),
-                        m.getTreatmentDetails(), m.getTreatmentDate(), m.getWorkerId()
+                        m.getRecordNumber(), m.getVictimId(), m.getBloodType(),
+                        m.getPrescriptions(), m.getTreatmentDetails(), m.getTreatmentDate(), m.getWorkerId()
                 });
             }
         } catch (SQLException e) {

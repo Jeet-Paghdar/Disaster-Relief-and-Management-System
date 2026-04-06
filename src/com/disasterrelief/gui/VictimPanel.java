@@ -15,6 +15,7 @@ public class VictimPanel extends JPanel {
     private JTable victimTable;
     private DefaultTableModel tableModel;
     private VictimDAO victimDAO;
+    private List<Victim> cachedVictims;
 
     public VictimPanel() {
         victimDAO = new VictimDAO();
@@ -127,9 +128,11 @@ public class VictimPanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
         btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Victim");
+        JButton btnUpdate = new JButton("Update Selected");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh Table");
         btnPanel.add(btnAdd);
+        btnPanel.add(btnUpdate);
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
 
@@ -142,8 +145,13 @@ public class VictimPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // --- CENTER: Data Table ---
-        String[] columns = {"ID", "First Name", "Last Name", "DOB", "Gender", "Blood", "Disaster ID"};
-        tableModel = new DefaultTableModel(columns, 0);
+        String[] columns = {"ID", "First Name", "Last Name", "DOB", "Gender", "Blood", "Phone", "Injury", "Diet", "Disaster ID"};
+        tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         victimTable = new JTable(tableModel);
         victimTable.setRowHeight(30);
         victimTable.setFillsViewportHeight(true);
@@ -163,59 +171,157 @@ public class VictimPanel extends JPanel {
             String phone = txtPhone.getText().trim();
             String dIdStr = txtDisasterId.getText().trim();
 
-            // 1. Validate First Name
             if (!ValidationUtils.isValidName(fName)) {
-                JOptionPane.showMessageDialog(this, "Invalid First Name (use letters only).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid First Name.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            // 2. Validate Last Name
             if (!ValidationUtils.isValidName(lName)) {
-                JOptionPane.showMessageDialog(this, "Invalid Last Name (use letters only).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid Last Name.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            // 3. Validate DOB
             LocalDate dobDate;
             try {
                 dobDate = LocalDate.parse(dobStr);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Invalid DOB format. Use YYYY-MM-DD.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid DOB. Use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            // 4. Validate Phone
             if (!ValidationUtils.isValidPhone(phone)) {
-                JOptionPane.showMessageDialog(this, "Invalid Phone (must be exactly 10 digits).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid Phone.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            // 5. Validate Disaster ID
             if (!ValidationUtils.isValidNumber(dIdStr)) {
-                JOptionPane.showMessageDialog(this, "Invalid Disaster ID.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid Disaster ID.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            int disasterId = Integer.parseInt(dIdStr);
-            
             try {
                 Victim v = new Victim();
-                v.setFirstName(txtFirstName.getText().trim());
-                v.setLastName(txtLastName.getText().trim());
+                v.setFirstName(fName);
+                v.setLastName(lName);
                 v.setDob(dobDate);
+                v.setGender((String) comboGender.getSelectedItem());
+                v.setPhoneNumber(phone);
+                v.setDisasterId(Integer.parseInt(dIdStr));
                 v.setInjuryStatus((String) comboInjury.getSelectedItem());
-                v.setPhoneNumber(txtPhone.getText().trim());
-                v.setEntryDate(LocalDate.now());
-                v.setDisasterId(disasterId);
                 v.setDietaryRestriction((String) comboDiet.getSelectedItem());
                 v.setBloodType((String) comboBlood.getSelectedItem());
-                
-                v.setGender((String) comboGender.getSelectedItem());
-                v.setAddressBefore("Unknown");
-                v.setAddressAfter("Relief Camp");
+                v.setEntryDate(LocalDate.now());
 
                 victimDAO.addVictim(v);
-                JOptionPane.showMessageDialog(this, "Victim added successfully!");
+                JOptionPane.showMessageDialog(this, "Victim Added Successfully!");
                 loadTableData();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error adding victim: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
+        });
+
+        btnUpdate.addActionListener(e -> {
+            int row = victimTable.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a victim to update.");
+                return;
+            }
+
+            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Update Victim", true);
+            dialog.setSize(500, 450);
+            dialog.setLayout(new BorderLayout());
+            dialog.setLocationRelativeTo(this);
+
+            JPanel form = new JPanel(new GridLayout(9, 2, 10, 10));
+            form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+            Victim v = cachedVictims.get(row);
+
+            JTextField updateFName = new JTextField(v.getFirstName());
+            JTextField updateLName = new JTextField(v.getLastName());
+            JTextField updateDob = new JTextField(v.getDob() != null ? v.getDob().toString() : "");
+            JTextField updatePhone = new JTextField(v.getPhoneNumber());
+            JTextField updateDId = new JTextField(String.valueOf(v.getDisasterId()));
+            
+            JComboBox<String> updateGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+            updateGender.setSelectedItem(v.getGender());
+            
+            JComboBox<String> updateInjury = new JComboBox<>(new String[]{"None", "Minor", "Moderate", "Severe", "Critical"});
+            updateInjury.setSelectedItem(v.getInjuryStatus());
+            
+            JComboBox<String> updateDiet = new JComboBox<>(new String[]{"None", "Vegetarian", "Vegan", "Non-Vegetarian", "Gluten-Free"});
+            updateDiet.setSelectedItem(v.getDietaryRestriction());
+            
+            JComboBox<String> updateBlood = new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"});
+            updateBlood.setSelectedItem(v.getBloodType());
+
+            form.add(new JLabel("First Name:")); form.add(updateFName);
+            form.add(new JLabel("Last Name:")); form.add(updateLName);
+            form.add(new JLabel("DOB (yyyy-mm-dd):")); form.add(updateDob);
+            form.add(new JLabel("Phone:")); form.add(updatePhone);
+            form.add(new JLabel("Disaster ID:")); form.add(updateDId);
+            form.add(new JLabel("Gender:")); form.add(updateGender);
+            form.add(new JLabel("Injury Status:")); form.add(updateInjury);
+            form.add(new JLabel("Dietary Need:")); form.add(updateDiet);
+            form.add(new JLabel("Blood Type:")); form.add(updateBlood);
+
+            dialog.add(form, BorderLayout.CENTER);
+
+            JPanel btnGrid = new JPanel();
+            JButton saveBtn = new JButton("Save");
+            JButton cancelBtn = new JButton("Cancel");
+            btnGrid.add(saveBtn);
+            btnGrid.add(cancelBtn);
+            dialog.add(btnGrid, BorderLayout.SOUTH);
+
+            cancelBtn.addActionListener(ev -> dialog.dispose());
+
+            saveBtn.addActionListener(ev -> {
+                String fName = updateFName.getText().trim();
+                String lName = updateLName.getText().trim();
+                String dobStr = updateDob.getText().trim();
+                String phone = updatePhone.getText().trim();
+                String dIdStr = updateDId.getText().trim();
+
+                if (!ValidationUtils.isValidName(fName) || !ValidationUtils.isValidName(lName)) {
+                    JOptionPane.showMessageDialog(dialog, "Invalid Name (use letters only).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                LocalDate dobDate;
+                try {
+                    dobDate = LocalDate.parse(dobStr);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Invalid DOB format. Use YYYY-MM-DD.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (!ValidationUtils.isValidPhone(phone)) {
+                    JOptionPane.showMessageDialog(dialog, "Invalid Phone (must be exactly 10 digits).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (!ValidationUtils.isValidNumber(dIdStr)) {
+                    JOptionPane.showMessageDialog(dialog, "Invalid Disaster ID.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                try {
+                    v.setFirstName(fName);
+                    v.setLastName(lName);
+                    v.setDob(dobDate);
+                    int age = java.time.Period.between(dobDate, LocalDate.now()).getYears();
+                    v.setAge(age);
+                    v.setPhoneNumber(phone);
+                    v.setDisasterId(Integer.parseInt(dIdStr));
+                    v.setInjuryStatus((String) updateInjury.getSelectedItem());
+                    v.setDietaryRestriction((String) updateDiet.getSelectedItem());
+                    v.setGender((String) updateGender.getSelectedItem());
+                    v.setBloodType((String) updateBlood.getSelectedItem());
+
+                    victimDAO.updateVictim(v);
+                    JOptionPane.showMessageDialog(dialog, "Victim Updated Successfully (Age: " + age + ")");
+                    dialog.dispose();
+                    loadTableData();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error updating victim: " + ex.getMessage());
+                }
+            });
+
+            dialog.setVisible(true);
         });
 
         btnDelete.addActionListener(e -> {
@@ -247,6 +353,25 @@ public class VictimPanel extends JPanel {
 
         btnRefresh.addActionListener(e -> loadTableData());
 
+        // Row Selection Listener
+        victimTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = victimTable.getSelectedRow();
+                if (row >= 0 && cachedVictims != null && row < cachedVictims.size()) {
+                    Victim v = cachedVictims.get(row);
+                    txtFirstName.setText(v.getFirstName());
+                    txtLastName.setText(v.getLastName());
+                    txtDob.setText(v.getDob() != null ? v.getDob().toString() : "");
+                    txtPhone.setText(v.getPhoneNumber());
+                    comboGender.setSelectedItem(v.getGender());
+                    comboInjury.setSelectedItem(v.getInjuryStatus());
+                    comboDiet.setSelectedItem(v.getDietaryRestriction());
+                    comboBlood.setSelectedItem(v.getBloodType());
+                    txtDisasterId.setText(String.valueOf(v.getDisasterId()));
+                }
+            }
+        });
+
         // Initial Load
         loadTableData();
     }
@@ -254,8 +379,8 @@ public class VictimPanel extends JPanel {
     private void loadTableData() {
         try {
             tableModel.setRowCount(0); // clear
-            List<Victim> victims = victimDAO.getAllVictims();
-            for (Victim v : victims) {
+            cachedVictims = victimDAO.getAllVictims();
+            for (Victim v : cachedVictims) {
                 tableModel.addRow(new Object[]{
                         v.getPersonId(),
                         v.getFirstName(),
@@ -263,6 +388,9 @@ public class VictimPanel extends JPanel {
                         v.getDob(),
                         v.getGender(),
                         v.getBloodType(),
+                        v.getPhoneNumber(),
+                        v.getInjuryStatus(),
+                        v.getDietaryRestriction(),
                         v.getDisasterId()
                 });
             }

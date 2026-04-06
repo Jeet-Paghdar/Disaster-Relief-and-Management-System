@@ -68,6 +68,55 @@ public class DisasterDAO {
         return disasters;
     }
 
+    public void updateDisaster(Disaster disaster) throws SQLException {
+        // 1. Update the base table (without AFFECTED_REGIONS)
+        String sql = "UPDATE DISASTER SET TYPE = ?, SEVERITY = ?, AGENCY_ID = ? WHERE DISASTER_ID = ?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false); // start transaction
+            try {
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, disaster.getType());
+                    stmt.setString(2, disaster.getSeverity());
+                    if (disaster.getAgencyId() > 0) {
+                        stmt.setInt(3, disaster.getAgencyId());
+                    } else {
+                        stmt.setNull(3, java.sql.Types.INTEGER);
+                    }
+                    stmt.setInt(4, disaster.getDisasterId());
+                    stmt.executeUpdate();
+                }
+
+                // 2. Clear old regions
+                try (PreparedStatement delStmt = conn.prepareStatement("DELETE FROM DISASTER_REGION WHERE DISASTER_ID = ?")) {
+                    delStmt.setInt(1, disaster.getDisasterId());
+                    delStmt.executeUpdate();
+                }
+
+                // 3. Insert new regions
+                if (disaster.getAffectedRegions() != null && !disaster.getAffectedRegions().trim().isEmpty()) {
+                    String[] regions = disaster.getAffectedRegions().split(",");
+                    String regionSql = "INSERT INTO DISASTER_REGION (DISASTER_ID, REGION_NAME) VALUES (?, ?)";
+                    try (PreparedStatement regionStmt = conn.prepareStatement(regionSql)) {
+                        for (String r : regions) {
+                            if (r.trim().isEmpty()) continue;
+                            regionStmt.setInt(1, disaster.getDisasterId());
+                            regionStmt.setString(2, r.trim());
+                            regionStmt.addBatch();
+                        }
+                        regionStmt.executeBatch();
+                    }
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
     public void deleteDisaster(int disasterId) throws SQLException {
         // Cascade manually: Delete Victims -> then everything tied to those victims -> then Disaster
         try (Connection conn = DBConnection.getConnection()) {

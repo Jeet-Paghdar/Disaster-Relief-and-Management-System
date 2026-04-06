@@ -86,9 +86,12 @@ public class SupplyPanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnPanel.setBackground(Color.WHITE);
         JButton btnAdd = new JButton("Add Supply");
+        JButton btnUpdate = new JButton("Update Selected");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnRefresh = new JButton("Refresh");
         btnPanel.add(btnAdd);
+        btnUpdate.setEnabled(true);
+        btnPanel.add(btnUpdate);
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
  
@@ -101,7 +104,12 @@ public class SupplyPanel extends JPanel {
 
         // Table
         String[] cols = {"ID", "Item Name", "Quantity", "Type", "Expiry Date"};
-        tableModel = new DefaultTableModel(cols, 0);
+        tableModel = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         supplyTable = new JTable(tableModel);
         supplyTable.setRowHeight(30);
         supplyTable.setFillsViewportHeight(true);
@@ -119,16 +127,8 @@ public class SupplyPanel extends JPanel {
             String qtyStr = txtQuantity.getText().trim();
             String type = txtType.getText().trim();
 
-            if (!ValidationUtils.isNotEmpty(itemName)) {
-                JOptionPane.showMessageDialog(this, "Invalid Item Name (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isValidNumber(qtyStr)) {
-                JOptionPane.showMessageDialog(this, "Invalid Quantity (must be a positive number).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isNotEmpty(type)) {
-                JOptionPane.showMessageDialog(this, "Invalid Type (cannot be empty).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            if (!ValidationUtils.isNotEmpty(itemName) || !ValidationUtils.isValidNumber(qtyStr) || !ValidationUtils.isNotEmpty(type)) {
+                JOptionPane.showMessageDialog(this, "Please fix validation errors.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -139,16 +139,86 @@ public class SupplyPanel extends JPanel {
                 s.setType(type);
                 s.setExpiryDate(LocalDate.now().plusMonths(6));
 
-                // Parse Location ID from selection e.g. "1 - Shelter A"
                 String selected = (String) comboLocation.getSelectedItem();
                 int locId = (selected != null) ? Integer.parseInt(selected.split(" - ")[0]) : 1;
 
                 supplyDAO.addSupplyWithLocation(s, locId);
-                JOptionPane.showMessageDialog(this, "Supply Added and linked to Location!");
+                JOptionPane.showMessageDialog(this, "Supply Added Successfully!");
                 loadTableData();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
+        });
+
+        btnUpdate.addActionListener(e -> {
+            int row = supplyTable.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a supply item to update.");
+                return;
+            }
+
+            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Update Supply", true);
+            dialog.setSize(400, 250);
+            dialog.setLayout(new BorderLayout());
+            dialog.setLocationRelativeTo(this);
+
+            JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
+            form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+            JTextField updateItemName = new JTextField(tableModel.getValueAt(row, 1).toString());
+            JTextField updateQuantity = new JTextField(tableModel.getValueAt(row, 2).toString());
+            updateQuantity.setEditable(false);
+            JTextField updateType = new JTextField(tableModel.getValueAt(row, 3).toString());
+            JTextField updateExpiry = new JTextField(tableModel.getValueAt(row, 4) != null ? tableModel.getValueAt(row, 4).toString() : "");
+
+            form.add(new JLabel("Item Name:")); form.add(updateItemName);
+            form.add(new JLabel("Type (e.g. Food):")); form.add(updateType);
+            form.add(new JLabel("Expiry Date (YYYY-MM-DD):")); form.add(updateExpiry);
+
+            dialog.add(form, BorderLayout.CENTER);
+
+            JPanel btnGrid = new JPanel();
+            JButton saveBtn = new JButton("Save");
+            JButton cancelBtn = new JButton("Cancel");
+            btnGrid.add(saveBtn);
+            btnGrid.add(cancelBtn);
+            dialog.add(btnGrid, BorderLayout.SOUTH);
+
+            cancelBtn.addActionListener(ev -> dialog.dispose());
+
+            saveBtn.addActionListener(ev -> {
+                String itemName = updateItemName.getText().trim();
+                String type = updateType.getText().trim();
+                String expiryStr = updateExpiry.getText().trim();
+
+                if (!ValidationUtils.isNotEmpty(itemName) || !ValidationUtils.isNotEmpty(type)) {
+                    JOptionPane.showMessageDialog(dialog, "Please fix validation errors before updating.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                try {
+                    int supplyId = (int) tableModel.getValueAt(row, 0);
+                    Supply s = new Supply();
+                    s.setSupplyId(supplyId);
+                    s.setItemName(itemName);
+                    s.setQuantity(Integer.parseInt(updateQuantity.getText().trim()));
+                    s.setType(type);
+                    if (!expiryStr.isEmpty()) {
+                        s.setExpiryDate(LocalDate.parse(expiryStr));
+                    } else {
+                        s.setExpiryDate(null);
+                    }
+
+                    supplyDAO.updateSupply(s);
+                    JOptionPane.showMessageDialog(dialog, "Supply Updated Successfully!");
+                    dialog.dispose();
+                    loadTableData();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+                }
+            });
+
+            dialog.setVisible(true);
         });
 
         btnDelete.addActionListener(e -> {
@@ -176,6 +246,18 @@ public class SupplyPanel extends JPanel {
         });
 
         btnRefresh.addActionListener(e -> loadTableData());
+
+        // Row Selection Listener
+        supplyTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = supplyTable.getSelectedRow();
+                if (row >= 0) {
+                    txtItemName.setText(tableModel.getValueAt(row, 1).toString());
+                    txtQuantity.setText(tableModel.getValueAt(row, 2).toString());
+                    txtType.setText(tableModel.getValueAt(row, 3).toString());
+                }
+            }
+        });
 
         loadTableData();
     }

@@ -106,6 +106,64 @@ public class VictimDAO {
         return victims;
     }
 
+    public void updateVictim(Victim victim) throws SQLException {
+        String personSQL = "UPDATE PERSON SET FIRST_NAME = ?, LAST_NAME = ?, DOB = ?, AGE = ?, GENDER = ?, EMAIL = ?, PHONE_NUMBER = ? WHERE PERSON_ID = ?";
+        String victimSQL = "UPDATE VICTIM SET ADDRESS_BEFORE = ?, ADDRESS_AFTER = ?, INJURY_STATUS = ?, ENTRY_DATE = ?, DISASTER_ID = ? WHERE VICTIM_ID = ?";
+        String deleteDietSQL = "DELETE FROM VICTIM_DIETARY_RESTRICTIONS WHERE VICTIM_ID = ?";
+        String insertDietSQL = "INSERT INTO VICTIM_DIETARY_RESTRICTIONS (VICTIM_ID, RESTRICTION_TYPE) VALUES (?, ?)";
+
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false); // Start transaction
+
+            try {
+                // Update PERSON table
+                try (PreparedStatement personStmt = conn.prepareStatement(personSQL)) {
+                    personStmt.setString(1, victim.getFirstName());
+                    personStmt.setString(2, victim.getLastName());
+                    personStmt.setDate(3, victim.getDob() != null ? Date.valueOf(victim.getDob()) : null);
+                    personStmt.setInt(4, victim.getAge());
+                    personStmt.setString(5, victim.getGender());
+                    personStmt.setString(6, victim.getEmail());
+                    personStmt.setString(7, victim.getPhoneNumber());
+                    personStmt.setInt(8, victim.getPersonId());
+                    personStmt.executeUpdate();
+                }
+
+                // Update VICTIM table
+                try (PreparedStatement victimStmt = conn.prepareStatement(victimSQL)) {
+                    victimStmt.setString(1, victim.getAddressBefore());
+                    victimStmt.setString(2, victim.getAddressAfter());
+                    victimStmt.setString(3, victim.getInjuryStatus());
+                    victimStmt.setDate(4, victim.getEntryDate() != null ? Date.valueOf(victim.getEntryDate()) : null);
+                    victimStmt.setInt(5, victim.getDisasterId());
+                    victimStmt.setInt(6, victim.getPersonId());
+                    victimStmt.executeUpdate();
+                }
+
+                // Update Dietary Restrictions (Delete and Re-insert is safest)
+                try (PreparedStatement deleteStmt = conn.prepareStatement(deleteDietSQL)) {
+                    deleteStmt.setInt(1, victim.getPersonId());
+                    deleteStmt.executeUpdate();
+                }
+
+                if (victim.getDietaryRestriction() != null && !victim.getDietaryRestriction().equals("None")) {
+                    try (PreparedStatement dietStmt = conn.prepareStatement(insertDietSQL)) {
+                        dietStmt.setInt(1, victim.getPersonId());
+                        dietStmt.setString(2, victim.getDietaryRestriction());
+                        dietStmt.executeUpdate();
+                    }
+                }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
     public void updateInjuryStatus(int victimId, String injuryStatus) throws SQLException {
         String sql = "UPDATE VICTIM SET INJURY_STATUS = ? WHERE VICTIM_ID = ?";
 

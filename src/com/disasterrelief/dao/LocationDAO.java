@@ -44,6 +44,20 @@ public class LocationDAO {
         return locations;
     }
 
+    public void updateLocation(Location location) throws SQLException {
+        String sql = "UPDATE LOCATION SET NAME = ?, ADDRESS = ?, TYPE = ?, PINCODE = ?, CAPACITY = ? WHERE LOCATION_ID = ?";
+
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, location.getName());
+            stmt.setString(2, location.getAddress());
+            stmt.setString(3, location.getType());
+            stmt.setString(4, location.getPincode());
+            stmt.setInt(5, location.getCapacity());
+            stmt.setInt(6, location.getLocationId());
+            stmt.executeUpdate();
+        }
+    }
+
     public void updateCapacity(int locationId, int capacity) throws SQLException {
         String sql = "UPDATE LOCATION SET CAPACITY = ? WHERE LOCATION_ID = ?";
 

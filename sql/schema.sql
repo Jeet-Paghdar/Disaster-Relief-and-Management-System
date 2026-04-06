@@ -121,14 +121,7 @@ create table RELIEF_SERVICE (
     foreign key (LOCATION_ID) references LOCATION(LOCATION_ID)
 );
 
--- 12. VENDOR
-create table VENDOR (
-    VENDOR_ID int auto_increment primary key,
-    COMPANY_NAME varchar(100) not null,
-    RATING decimal(3,1),
-    EMAIL varchar(100),
-    PHONE_NUMBER varchar(15)
-);
+
 
 -- 13. SUPPLY
 create table SUPPLY (
@@ -148,14 +141,7 @@ create table LOCATION_SUPPLY (
     foreign key (SUPPLY_ID) references SUPPLY(SUPPLY_ID)
 );
 
--- 15. VENDOR_SUPPLY
-create table VENDOR_SUPPLY (
-    VENDOR_ID int,
-    SUPPLY_ID int,
-    primary key (VENDOR_ID, SUPPLY_ID),
-    foreign key (VENDOR_ID) references VENDOR(VENDOR_ID),
-    foreign key (SUPPLY_ID) references SUPPLY(SUPPLY_ID)
-);
+
 
 -- 16. VICTIM_SUPPLY
 create table VICTIM_SUPPLY (

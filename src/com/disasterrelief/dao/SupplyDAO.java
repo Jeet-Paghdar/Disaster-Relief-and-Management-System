@@ -75,6 +75,22 @@ public class SupplyDAO {
         return supplies;
     }
 
+    public void updateSupply(Supply supply) throws SQLException, InvalidSupplyException {
+        if (supply.getQuantity() < 0) {
+            throw new InvalidSupplyException("Quantity cannot be negative!");
+        }
+
+        String sql = "UPDATE SUPPLY SET ITEM_NAME = ?, TYPE = ?, EXPIRY_DATE = ? WHERE SUPPLY_ID = ?";
+
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, supply.getItemName());
+            stmt.setString(2, supply.getType());
+            stmt.setDate(3, supply.getExpiryDate() != null ? Date.valueOf(supply.getExpiryDate()) : null);
+            stmt.setInt(4, supply.getSupplyId());
+            stmt.executeUpdate();
+        }
+    }
+
     public void updateQuantity(int supplyId, int quantity) throws SQLException, InvalidSupplyException {
         throw new UnsupportedOperationException("Global quantity is now dynamically computed from allocations and stock.");
     }
@@ -89,11 +105,7 @@ public class SupplyDAO {
                     stmt.executeUpdate();
                 }
 
-                // 2. Delete from VENDOR_SUPPLY
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM VENDOR_SUPPLY WHERE SUPPLY_ID = ?")) {
-                    stmt.setInt(1, supplyId);
-                    stmt.executeUpdate();
-                }
+
 
                 // 3. Delete from VICTIM_SUPPLY
                 try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM VICTIM_SUPPLY WHERE SUPPLY_ID = ?")) {

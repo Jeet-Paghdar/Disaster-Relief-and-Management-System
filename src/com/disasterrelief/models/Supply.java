@@ -47,8 +47,6 @@ public class Supply {
 
     public LocalDate getExpiryDate() { return expiryDate; }
     public void setExpiryDate(LocalDate expiryDate) {
-        if (expiryDate == null)
-            throw new IllegalArgumentException("Expiry date cannot be null");
         this.expiryDate = expiryDate;
     }
 

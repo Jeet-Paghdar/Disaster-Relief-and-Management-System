@@ -1,6 +1,7 @@
 package com.disasterrelief.gui;
 
 import com.disasterrelief.dao.MedicalDAO;
+import com.disasterrelief.dao.VictimDAO;
 import com.disasterrelief.models.MedicalRecord;
 import com.disasterrelief.utils.ValidationUtils;
 
@@ -15,9 +16,11 @@ public class MedicalPanel extends JPanel {
     private JTable medicalTable;
     private DefaultTableModel tableModel;
     private MedicalDAO medicalDAO;
+    private VictimDAO victimDAO;
 
     public MedicalPanel() {
         medicalDAO = new MedicalDAO();
+        victimDAO = new VictimDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setBackground(Color.WHITE);
@@ -35,14 +38,34 @@ public class MedicalPanel extends JPanel {
 
         JTextField txtVictimId = new JTextField();
         txtVictimId.setPreferredSize(fieldSize);
-        JTextField txtBloodType = new JTextField();
-        txtBloodType.setPreferredSize(fieldSize);
+        JComboBox<String> comboBlood = new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"});
+        comboBlood.setPreferredSize(fieldSize);
         JTextField txtPrescriptions = new JTextField();
         txtPrescriptions.setPreferredSize(fieldSize);
         JTextField txtTreatments = new JTextField();
         txtTreatments.setPreferredSize(fieldSize);
         JTextField txtWorkerId = new JTextField();
         txtWorkerId.setPreferredSize(fieldSize);
+
+        // Auto-fetch Blood Type when Victim ID is entered
+        txtVictimId.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                String idStr = txtVictimId.getText().trim();
+                if (ValidationUtils.isValidNumber(idStr)) {
+                    try {
+                        String blood = victimDAO.getBloodType(Integer.parseInt(idStr));
+                        if (blood != null) {
+                            comboBlood.setSelectedItem(blood);
+                        } else {
+                            JOptionPane.showMessageDialog(MedicalPanel.this, "Victim ID not found in system.", "System Warning", JOptionPane.WARNING_MESSAGE);
+                            comboBlood.setSelectedIndex(-1);
+                        }
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
 
         // Row 0: Victim ID & Blood Type
         gbc.gridx = 0; gbc.gridy = 0;
@@ -52,7 +75,8 @@ public class MedicalPanel extends JPanel {
         gbc.gridx = 2; 
         formContainer.add(new JLabel("Blood Type:"), gbc);
         gbc.gridx = 3; 
-        formContainer.add(txtBloodType, gbc);
+        comboBlood.setEnabled(false); // Make it read-only since it's fetched from the Victim table
+        formContainer.add(comboBlood, gbc);
 
         // Row 1: Prescriptions & Treatments
         gbc.gridy = 1;
@@ -112,7 +136,7 @@ public class MedicalPanel extends JPanel {
         // Actions
         btnAdd.addActionListener(e -> {
             String vIdStr = txtVictimId.getText().trim();
-            String blood = txtBloodType.getText().trim();
+            String blood = (String) comboBlood.getSelectedItem();
             String pres = txtPrescriptions.getText().trim();
             String treats = txtTreatments.getText().trim();
             String wIdStr = txtWorkerId.getText().trim();
@@ -151,7 +175,8 @@ public class MedicalPanel extends JPanel {
             JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
             form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-            JTextField updateBlood = new JTextField(tableModel.getValueAt(row, 2).toString());
+            JComboBox<String> updateBlood = new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"});
+            updateBlood.setSelectedItem(tableModel.getValueAt(row, 2).toString());
             JTextField updatePres = new JTextField(tableModel.getValueAt(row, 3).toString());
             JTextField updateTreats = new JTextField(tableModel.getValueAt(row, 4).toString());
 
@@ -171,7 +196,7 @@ public class MedicalPanel extends JPanel {
             cancelBtn.addActionListener(ev -> dialog.dispose());
 
             saveBtn.addActionListener(ev -> {
-                String blood = updateBlood.getText().trim();
+                String blood = (String) updateBlood.getSelectedItem();
                 String pres = updatePres.getText().trim();
                 String treats = updateTreats.getText().trim();
 
@@ -226,7 +251,7 @@ public class MedicalPanel extends JPanel {
                 int row = medicalTable.getSelectedRow();
                 if (row >= 0) {
                     txtVictimId.setText(tableModel.getValueAt(row, 1).toString());
-                    txtBloodType.setText(tableModel.getValueAt(row, 2).toString());
+                    comboBlood.setSelectedItem(tableModel.getValueAt(row, 2).toString());
                     txtPrescriptions.setText(tableModel.getValueAt(row, 3).toString());
                     txtTreatments.setText(tableModel.getValueAt(row, 4).toString());
                     txtWorkerId.setText(tableModel.getValueAt(row, 6).toString());

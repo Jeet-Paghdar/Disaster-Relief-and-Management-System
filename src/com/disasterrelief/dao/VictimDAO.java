@@ -265,4 +265,17 @@ public class VictimDAO {
 
         return victim;
     }
+
+    public String getBloodType(int victimId) throws SQLException {
+        String sql = "SELECT BLOOD_TYPE FROM VICTIM WHERE VICTIM_ID = ?";
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, victimId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("BLOOD_TYPE");
+                }
+            }
+        }
+        return null;
+    }
 }

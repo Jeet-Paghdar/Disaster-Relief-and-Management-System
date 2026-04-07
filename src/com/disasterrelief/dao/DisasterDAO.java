@@ -8,6 +8,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DisasterDAO {
+    
+    /**
+     * Auto-Sync: Ensures the database agencies match the GUI labels.
+     * This handles the IDs 1, 2, and 3 specifically for the demonstration.
+     */
+    public void ensureAgenciesExist() throws SQLException {
+        String[] names = {"NDMA", "NDRF", "NIDM"};
+        try (Connection conn = DBConnection.getConnection()) {
+            for (int i = 0; i < names.length; i++) {
+                int id = i + 1;
+                String name = names[i];
+                
+                // 1. Try to update existing row
+                String updateSQL = "UPDATE GOVT_AGENCY SET AGENCY_NAME = ? WHERE AGENCY_ID = ?";
+                try (PreparedStatement checkStmt = conn.prepareStatement(updateSQL)) {
+                    checkStmt.setString(1, name);
+                    checkStmt.setInt(2, id);
+                    int rows = checkStmt.executeUpdate();
+                    
+                    // 2. If row doesn't exist, insert it
+                    if (rows == 0) {
+                        String insertSQL = "INSERT INTO GOVT_AGENCY (AGENCY_ID, AGENCY_NAME, BUDGET_CODE) VALUES (?, ?, ?)";
+                        try (PreparedStatement insertStmt = conn.prepareStatement(insertSQL)) {
+                            insertStmt.setInt(1, id);
+                            insertStmt.setString(2, name);
+                            insertStmt.setString(3, "BUDGET-" + (1000 + id));
+                            insertStmt.executeUpdate();
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     public void addDisaster(Disaster disaster) throws SQLException {
         String sql = "INSERT INTO DISASTER (TYPE, SEVERITY, AGENCY_ID) VALUES (?, ?, ?)";

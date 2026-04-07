@@ -17,6 +17,11 @@ public class DisasterPanel extends JPanel {
 
     public DisasterPanel() {
         disasterDAO = new DisasterDAO();
+        try {
+            disasterDAO.ensureAgenciesExist();
+        } catch (SQLException e) {
+            System.err.println("Database Sync Warning: " + e.getMessage());
+        }
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setBackground(Color.WHITE);
@@ -71,7 +76,7 @@ public class DisasterPanel extends JPanel {
         gbc.gridx = 1; 
         formContainer.add(txtRegions, gbc);
         gbc.gridx = 2; 
-        formContainer.add(new JLabel("Control Agency:"), gbc);
+        formContainer.add(new JLabel("Govt Agency:"), gbc);
         gbc.gridx = 3; 
         formContainer.add(comboAgency, gbc);
 
@@ -95,7 +100,7 @@ public class DisasterPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"Disaster ID", "Type", "Severity", "Affected Regions", "Handling Agency"};
+        String[] cols = {"Disaster ID", "Type", "Severity", "Affected Regions", "Govt Agency"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -176,7 +181,7 @@ public class DisasterPanel extends JPanel {
             form.add(new JLabel("Type:")); form.add(updateType);
             form.add(new JLabel("Severity:")); form.add(updateSeverity);
             form.add(new JLabel("Affected Regions:")); form.add(updateRegions);
-            form.add(new JLabel("Control Agency:")); form.add(updateAgency);
+            form.add(new JLabel("Govt Agency:")); form.add(updateAgency);
 
             dialog.add(form, BorderLayout.CENTER);
 

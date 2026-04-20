@@ -10,6 +10,8 @@ public class Location {
     private String type;
     private String pincode;
     private int capacity;
+    private int currentOccupancy;
+
 
     public Location() {}
 
@@ -21,6 +23,12 @@ public class Location {
         setType(type);
         setPincode(pincode);
         setCapacity(capacity);
+    }
+
+    public Location(int locationId, String name, String address,
+                    String type, String pincode, int capacity, int currentOccupancy) {
+        this(locationId, name, address, type, pincode, capacity);
+        this.currentOccupancy = currentOccupancy;
     }
 
     public int getLocationId() { return locationId; }
@@ -78,9 +86,13 @@ public class Location {
         this.capacity = capacity;
     }
 
+    public int getCurrentOccupancy() { return currentOccupancy; }
+    public void setCurrentOccupancy(int currentOccupancy) { this.currentOccupancy = currentOccupancy; }
+
+
+
     @Override
     public String toString() {
-        return "Location [locationId=" + locationId + ", name=" + name +
-               ", capacity=" + capacity + "]";
+        return name + " (" + address + ")";
     }
 }

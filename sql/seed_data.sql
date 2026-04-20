@@ -1,30 +1,23 @@
 USE DisasterReliefDB;
 
--- Clear previous data optionally if debugging
-SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE VICTIM_SUPPLY;
-TRUNCATE TABLE LOCATION_SUPPLY;
-TRUNCATE TABLE SUPPLY;
-TRUNCATE TABLE INQUIRER;
-TRUNCATE TABLE SOCIAL_WORKER;
-TRUNCATE TABLE VICTIM;
-TRUNCATE TABLE PERSON;
-TRUNCATE TABLE LOCATION;
-TRUNCATE TABLE DISASTER_REGION;
-TRUNCATE TABLE DISASTER;
-TRUNCATE TABLE GOVT_AGENCY;
-TRUNCATE TABLE VENDOR;
-SET FOREIGN_KEY_CHECKS = 1;
+-- =====================================================================================
+-- FACTORY RESET (DISABLED BY DEFAULT TO PROTECT GUI DATA)
+-- If you ever need to completely wipe the database and start over, you can uncomment 
+-- the lines below. WARNING: This will permanently delete ALL data you added manually!
+-- =====================================================================================
+ 	
+-- =====================================================================================
 
 
 -- 1. AGENCIES
 INSERT INTO GOVT_AGENCY (AGENCY_NAME, BUDGET_CODE) VALUES 
-('FEMA', 'BUDGET-1001'), 
-('Red Cross', 'BUDGET-1002');
+('NDMA', 'BUDGET-1001'), 
+('NDRF', 'BUDGET-1002'),
+('NIDM', 'BUDGET-1003');
 
 -- 2. DISASTERS & REGIONS
 INSERT INTO DISASTER (DISASTER_ID, TYPE, SEVERITY, AGENCY_ID) VALUES 
-(1, 'Hurricane', 'Critical', 1),
+(1, 'Hurricane', 'High', 1),
 (2, 'Earthquake', 'Severe', 2);
 
 INSERT INTO DISASTER_REGION (DISASTER_ID, REGION_NAME) VALUES 
@@ -35,11 +28,9 @@ INSERT INTO DISASTER_REGION (DISASTER_ID, REGION_NAME) VALUES
 INSERT INTO LOCATION (LOCATION_ID, NAME, ADDRESS, TYPE, PINCODE, CAPACITY) VALUES
 (1, 'Shelter Alpha', '123 Safe St', 'Shelter', '110001', 500),
 (2, 'City Hospital', '456 Med Blvd', 'Hospital', '110002', 1000),
-(3, 'Base Warehouse', '789 Supply Rd', 'Warehouse', '110003', 5000);
+(3, 'Base Warehouse', '789 Supply Rd', 'Supply Center', '110003', 5000);
 
--- 4. VENDORS
-INSERT INTO VENDOR (VENDOR_ID, COMPANY_NAME, RATING, EMAIL, PHONE_NUMBER) VALUES
-(1, 'Global Supplies Inc.', 4.5, 'contact@globalsupplies.com', '1800123456');
+
 
 -- 5. SUPPLIES
 INSERT INTO SUPPLY (SUPPLY_ID, ITEM_NAME, TYPE, EXPIRY_DATE) VALUES

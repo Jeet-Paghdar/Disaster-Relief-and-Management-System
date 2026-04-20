@@ -41,14 +41,14 @@ create table PERSON (
 -- 4. VICTIM
 create table VICTIM (
     VICTIM_ID int primary key,
-    ADDRESS_BEFORE varchar(200),
-    ADDRESS_AFTER varchar(200),
+    LOCATION_ID int,
     INJURY_STATUS varchar(100),
     ENTRY_DATE date,
     DISASTER_ID int,
     BLOOD_TYPE varchar(5),
     foreign key (VICTIM_ID) references PERSON(PERSON_ID),
-    foreign key (DISASTER_ID) references DISASTER(DISASTER_ID)
+    foreign key (DISASTER_ID) references DISASTER(DISASTER_ID),
+    foreign key (LOCATION_ID) references LOCATION(LOCATION_ID)
 );
 
 -- 5. INQUIRER
@@ -68,15 +68,7 @@ create table SOCIAL_WORKER (
     foreign key (PERSON_ID) references PERSON(PERSON_ID)
 );
 
--- 7. FAMILY_RELATION
-create table FAMILY_RELATION (
-    RELATION_ID int auto_increment primary key,
-    VICTIM1_ID int,
-    VICTIM2_ID int,
-    RELATION_TYPE varchar(50),
-    foreign key (VICTIM1_ID) references VICTIM(VICTIM_ID),
-    foreign key (VICTIM2_ID) references VICTIM(VICTIM_ID)
-);
+
 
 -- 8. MEDICAL_RECORD
 create table MEDICAL_RECORD (
@@ -105,16 +97,16 @@ create table LOCATION (
     ADDRESS varchar(200),
     TYPE varchar(50),
     PINCODE varchar(10),
-    CAPACITY int
+    CAPACITY int,
+    CONSTRAINT uq_location_detail UNIQUE (NAME, ADDRESS, PINCODE)
 );
 
--- 11. RELIEF_SERVICE
-create table RELIEF_SERVICE (
-    SERVICE_ID int auto_increment primary key,
+-- 11. MATCH_REGISTRY
+create table MATCH_REGISTRY (
+    MATCH_ID int auto_increment primary key,
     INQUIRER_ID int,
     VICTIM_ID int,
     LOCATION_ID int,
-    DATE_OF_INQUIRY date,
     INFO_PROVIDED text,
     foreign key (INQUIRER_ID) references INQUIRER(INQUIRER_ID),
     foreign key (VICTIM_ID) references VICTIM(VICTIM_ID),

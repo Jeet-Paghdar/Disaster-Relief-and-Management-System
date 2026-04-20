@@ -1,7 +1,9 @@
 package com.disasterrelief.gui;
 
 import com.disasterrelief.dao.VictimDAO;
+import com.disasterrelief.dao.LocationDAO;
 import com.disasterrelief.models.Victim;
+import com.disasterrelief.models.Location;
 import com.disasterrelief.utils.ValidationUtils;
 
 import javax.swing.*;
@@ -15,10 +17,13 @@ public class VictimPanel extends JPanel {
     private JTable victimTable;
     private DefaultTableModel tableModel;
     private VictimDAO victimDAO;
+    private LocationDAO locationDAO;
     private List<Victim> cachedVictims;
+    private JComboBox<Location> comboLocation;
 
     public VictimPanel() {
         victimDAO = new VictimDAO();
+        locationDAO = new LocationDAO();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setBackground(Color.WHITE);
@@ -114,7 +119,7 @@ public class VictimPanel extends JPanel {
         gbc.gridx = 3; 
         formContainer.add(comboDiet, gbc);
 
-        // Row 4: Blood Type
+        // Row 4: Blood Type & Current Location
         gbc.gridy = 4;
         gbc.gridx = 0; gbc.weightx = 0.0;
         formContainer.add(new JLabel("Blood Type:"), gbc);
@@ -123,6 +128,15 @@ public class VictimPanel extends JPanel {
         comboBlood.setMinimumSize(fieldSize);
         gbc.gridx = 1; 
         formContainer.add(comboBlood, gbc);
+
+        gbc.gridx = 2;
+        formContainer.add(new JLabel("Current Location:"), gbc);
+        comboLocation = new JComboBox<>();
+        comboLocation.setPreferredSize(fieldSize);
+        comboLocation.setMinimumSize(fieldSize);
+        loadLocations();
+        gbc.gridx = 3;
+        formContainer.add(comboLocation, gbc);
 
         // Buttons Row
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
@@ -145,7 +159,7 @@ public class VictimPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // --- CENTER: Data Table ---
-        String[] columns = {"ID", "First Name", "Last Name", "DOB", "Gender", "Blood", "Phone", "Injury", "Diet", "Disaster ID"};
+        String[] columns = {"ID", "First Name", "Last Name", "DOB", "Age", "Gender", "Blood", "Linked Location", "Phone", "Injury", "Diet", "Disaster ID"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -156,10 +170,13 @@ public class VictimPanel extends JPanel {
         victimTable.setRowHeight(30);
         victimTable.setFillsViewportHeight(true);
         
-        // Brighter Header
         victimTable.getTableHeader().setBackground(new Color(30, 48, 80));
         victimTable.getTableHeader().setForeground(Color.WHITE);
         victimTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
+        // Adjust column widths
+        victimTable.getColumnModel().getColumn(0).setPreferredWidth(40); // ID
+        victimTable.getColumnModel().getColumn(7).setPreferredWidth(200); // Linked Location
         
         add(new JScrollPane(victimTable), BorderLayout.CENTER);
 
@@ -170,13 +187,10 @@ public class VictimPanel extends JPanel {
             String dobStr = txtDob.getText().trim();
             String phone = txtPhone.getText().trim();
             String dIdStr = txtDisasterId.getText().trim();
+            Location selectedLoc = (Location) comboLocation.getSelectedItem();
 
-            if (!ValidationUtils.isValidName(fName)) {
-                JOptionPane.showMessageDialog(this, "Invalid First Name.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (!ValidationUtils.isValidName(lName)) {
-                JOptionPane.showMessageDialog(this, "Invalid Last Name.", "Error", JOptionPane.ERROR_MESSAGE);
+            if (!ValidationUtils.isValidName(fName) || !ValidationUtils.isValidName(lName)) {
+                JOptionPane.showMessageDialog(this, "Invalid Name.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             LocalDate dobDate;
@@ -194,6 +208,10 @@ public class VictimPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Invalid Disaster ID.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            if (selectedLoc == null) {
+                JOptionPane.showMessageDialog(this, "Please select a location.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             try {
                 Victim v = new Victim();
@@ -206,6 +224,7 @@ public class VictimPanel extends JPanel {
                 v.setInjuryStatus((String) comboInjury.getSelectedItem());
                 v.setDietaryRestriction((String) comboDiet.getSelectedItem());
                 v.setBloodType((String) comboBlood.getSelectedItem());
+                v.setLocationId(selectedLoc.getLocationId());
                 v.setEntryDate(LocalDate.now());
 
                 victimDAO.addVictim(v);
@@ -228,7 +247,7 @@ public class VictimPanel extends JPanel {
             dialog.setLayout(new BorderLayout());
             dialog.setLocationRelativeTo(this);
 
-            JPanel form = new JPanel(new GridLayout(9, 2, 10, 10));
+            JPanel form = new JPanel(new GridLayout(10, 2, 10, 10));
             form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
             Victim v = cachedVictims.get(row);
@@ -237,6 +256,20 @@ public class VictimPanel extends JPanel {
             JTextField updateLName = new JTextField(v.getLastName());
             JTextField updateDob = new JTextField(v.getDob() != null ? v.getDob().toString() : "");
             JTextField updatePhone = new JTextField(v.getPhoneNumber());
+            
+            JComboBox<Location> updateLocation = new JComboBox<>();
+            try {
+                List<Location> locs = locationDAO.getAllLocations();
+                for (Location l : locs) {
+                    updateLocation.addItem(l);
+                    if (l.getLocationId() == v.getLocationId()) {
+                        updateLocation.setSelectedItem(l);
+                    }
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
             JTextField updateDId = new JTextField(String.valueOf(v.getDisasterId()));
             
             JComboBox<String> updateGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
@@ -260,6 +293,7 @@ public class VictimPanel extends JPanel {
             form.add(new JLabel("Injury Status:")); form.add(updateInjury);
             form.add(new JLabel("Dietary Need:")); form.add(updateDiet);
             form.add(new JLabel("Blood Type:")); form.add(updateBlood);
+            form.add(new JLabel("Current Location:")); form.add(updateLocation);
 
             dialog.add(form, BorderLayout.CENTER);
 
@@ -278,32 +312,18 @@ public class VictimPanel extends JPanel {
                 String dobStr = updateDob.getText().trim();
                 String phone = updatePhone.getText().trim();
                 String dIdStr = updateDId.getText().trim();
+                Location selLoc = (Location) updateLocation.getSelectedItem();
 
-                if (!ValidationUtils.isValidName(fName) || !ValidationUtils.isValidName(lName)) {
-                    JOptionPane.showMessageDialog(dialog, "Invalid Name (use letters only).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                LocalDate dobDate;
-                try {
-                    dobDate = LocalDate.parse(dobStr);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(dialog, "Invalid DOB format. Use YYYY-MM-DD.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (!ValidationUtils.isValidPhone(phone)) {
-                    JOptionPane.showMessageDialog(dialog, "Invalid Phone (must be exactly 10 digits).", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (!ValidationUtils.isValidNumber(dIdStr)) {
-                    JOptionPane.showMessageDialog(dialog, "Invalid Disaster ID.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                if (selLoc == null) {
+                    JOptionPane.showMessageDialog(dialog, "Please select a location.");
                     return;
                 }
 
                 try {
                     v.setFirstName(fName);
                     v.setLastName(lName);
-                    v.setDob(dobDate);
-                    int age = java.time.Period.between(dobDate, LocalDate.now()).getYears();
+                    v.setDob(LocalDate.parse(dobStr));
+                    int age = java.time.Period.between(v.getDob(), LocalDate.now()).getYears();
                     v.setAge(age);
                     v.setPhoneNumber(phone);
                     v.setDisasterId(Integer.parseInt(dIdStr));
@@ -311,13 +331,14 @@ public class VictimPanel extends JPanel {
                     v.setDietaryRestriction((String) updateDiet.getSelectedItem());
                     v.setGender((String) updateGender.getSelectedItem());
                     v.setBloodType((String) updateBlood.getSelectedItem());
+                    v.setLocationId(selLoc.getLocationId());
 
                     victimDAO.updateVictim(v);
-                    JOptionPane.showMessageDialog(dialog, "Victim Updated Successfully (Age: " + age + ")");
+                    JOptionPane.showMessageDialog(dialog, "Victim Updated Successfully!");
                     dialog.dispose();
                     loadTableData();
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(dialog, "Error updating victim: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
                 }
             });
 
@@ -331,19 +352,10 @@ public class VictimPanel extends JPanel {
                 return;
             }
             int id = (int) tableModel.getValueAt(row, 0);
-            int confirm = JOptionPane.showConfirmDialog(this, 
-                "CAUTION: Deleting this Victim will also delete all linked records in:\n" +
-                "- MEDICAL_RECORD\n" +
-                "- FAMILY_RELATION\n" +
-                "- VICTIM_DIETARY_RESTRICTIONS\n" +
-                "- VICTIM_SUPPLY\n" +
-                "- RELIEF_SERVICE (Matches)\n" +
-                "Are you sure you want to proceed?", "Confirm Cascaded Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            
+            int confirm = JOptionPane.showConfirmDialog(this, "Delete this Victim?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     victimDAO.deleteVictim(id);
-                    JOptionPane.showMessageDialog(this, "Victim and all personal records deleted.");
                     loadTableData();
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
@@ -351,9 +363,11 @@ public class VictimPanel extends JPanel {
             }
         });
 
-        btnRefresh.addActionListener(e -> loadTableData());
+        btnRefresh.addActionListener(e -> {
+            loadLocations();
+            loadTableData();
+        });
 
-        // Row Selection Listener
         victimTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int row = victimTable.getSelectedRow();
@@ -367,36 +381,52 @@ public class VictimPanel extends JPanel {
                     comboInjury.setSelectedItem(v.getInjuryStatus());
                     comboDiet.setSelectedItem(v.getDietaryRestriction());
                     comboBlood.setSelectedItem(v.getBloodType());
+                    
+                    for (int i = 0; i < comboLocation.getItemCount(); i++) {
+                        Location loc = comboLocation.getItemAt(i);
+                        if (loc.getLocationId() == v.getLocationId()) {
+                            comboLocation.setSelectedIndex(i);
+                            break;
+                        }
+                    }
                     txtDisasterId.setText(String.valueOf(v.getDisasterId()));
                 }
             }
         });
 
-        // Initial Load
         loadTableData();
+    }
+
+    public void loadLocations() {
+        try {
+            Location selected = (Location) comboLocation.getSelectedItem();
+            comboLocation.removeAllItems();
+            List<Location> locs = locationDAO.getAllLocations();
+            for (Location l : locs) {
+                comboLocation.addItem(l);
+                if (selected != null && l.getLocationId() == selected.getLocationId()) {
+                    comboLocation.setSelectedItem(l);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void loadTableData() {
         try {
-            tableModel.setRowCount(0); // clear
+            tableModel.setRowCount(0);
             cachedVictims = victimDAO.getAllVictims();
             for (Victim v : cachedVictims) {
                 tableModel.addRow(new Object[]{
-                        v.getPersonId(),
-                        v.getFirstName(),
-                        v.getLastName(),
-                        v.getDob(),
-                        v.getGender(),
-                        v.getBloodType(),
-                        v.getPhoneNumber(),
-                        v.getInjuryStatus(),
-                        v.getDietaryRestriction(),
-                        v.getDisasterId()
+                        v.getPersonId(), v.getFirstName(), v.getLastName(),
+                        v.getDob(), v.getAge(), v.getGender(), v.getBloodType(),
+                        v.getLocationName(), v.getPhoneNumber(), v.getInjuryStatus(),
+                        v.getDietaryRestriction(), v.getDisasterId()
                 });
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Failed to load victim data.");
         }
     }
 }

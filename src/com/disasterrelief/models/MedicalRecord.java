@@ -6,6 +6,7 @@ public class MedicalRecord {
 
     private int recordNumber;
     private int victimId;
+    private int age;
     private String bloodType;
     private String prescriptions;
     private String treatmentDetails;
@@ -26,11 +27,21 @@ public class MedicalRecord {
         this.workerId = workerId;
     }
 
+    public MedicalRecord(int recordNumber, int victimId, int age, String bloodType,
+                         String prescriptions, String treatmentDetails,
+                         LocalDate treatmentDate, int workerId) {
+        this(recordNumber, victimId, bloodType, prescriptions, treatmentDetails, treatmentDate, workerId);
+        this.age = age;
+    }
+
     public int getRecordNumber() { return recordNumber; }
     public void setRecordNumber(int recordNumber) { this.recordNumber = recordNumber; }
 
     public int getVictimId() { return victimId; }
     public void setVictimId(int victimId) { this.victimId = victimId; }
+
+    public int getAge() { return age; }
+    public void setAge(int age) { this.age = age; }
 
     public String getBloodType() { return bloodType; }
     public void setBloodType(String bloodType) { this.bloodType = bloodType; }

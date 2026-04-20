@@ -164,20 +164,24 @@ public class InquirerPanel extends JPanel {
         btnSearch.addActionListener(e -> {
             String iFirst = txtInquirerFirst.getText().trim();
             String iLast = txtInquirerLast.getText().trim();
+            String iPhone = txtInquirerPhone.getText().trim();
+            String iGender = (String) comboInquirerGender.getSelectedItem();
             String vFirst = txtVictimFirst.getText().trim();
             String vLast = txtVictimLast.getText().trim();
             String vPhone = txtVictimPhone.getText().trim();
 
             if (!ValidationUtils.isValidName(iFirst) || !ValidationUtils.isValidName(iLast) || 
+                !ValidationUtils.isValidPhone(iPhone) || // Validating Inquirer Phone
                 !ValidationUtils.isValidName(vFirst) || !ValidationUtils.isValidName(vLast) || 
                 !ValidationUtils.isValidPhone(vPhone)) {
-                JOptionPane.showMessageDialog(this, "Please fix validation errors.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please fix validation errors (ensure phone numbers are 10 digits).", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             try {
                 boolean matched = inquirerDAO.findAndMatchVictim(
-                        iFirst, iLast, vFirst, vLast, vPhone,
+                        iFirst, iLast, iPhone, iGender, 
+                        vFirst, vLast, vPhone,
                         (String) comboRelation.getSelectedItem()
                 );
                 if (matched) {

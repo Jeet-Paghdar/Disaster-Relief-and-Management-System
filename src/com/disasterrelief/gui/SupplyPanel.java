@@ -53,8 +53,13 @@ public class SupplyPanel extends JPanel {
         txtType.setPreferredSize(fieldSize);
         txtType.setMinimumSize(fieldSize);
         txtType.setMargin(new Insets(5, 8, 5, 8));
+
+        JTextField txtExpiry = new JTextField();
+        txtExpiry.setPreferredSize(fieldSize);
+        txtExpiry.setMinimumSize(fieldSize);
+        txtExpiry.setMargin(new Insets(5, 8, 5, 8));
         
-        JComboBox<String> comboLocation = new JComboBox<>();
+        JComboBox<Location> comboLocation = new JComboBox<>();
         comboLocation.setPreferredSize(fieldSize);
         comboLocation.setMinimumSize(fieldSize);
         loadLocations(comboLocation);
@@ -81,6 +86,13 @@ public class SupplyPanel extends JPanel {
         formContainer.add(new JLabel("Stored At Location:"), gbc);
         gbc.gridx = 3; 
         formContainer.add(comboLocation, gbc);
+
+        // Row 2
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        formContainer.add(new JLabel("Expiry Date (YYYY-MM-DD):"), gbc);
+        gbc.gridx = 1;
+        formContainer.add(txtExpiry, gbc);
  
         // Row 2: Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
@@ -95,7 +107,7 @@ public class SupplyPanel extends JPanel {
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
  
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 4;
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 4;
         gbc.weightx = 1.0;
         gbc.insets = new Insets(15, 10, 5, 10);
         formContainer.add(btnPanel, gbc);
@@ -126,9 +138,10 @@ public class SupplyPanel extends JPanel {
             String itemName = txtItemName.getText().trim();
             String qtyStr = txtQuantity.getText().trim();
             String type = txtType.getText().trim();
+            String expiryStr = txtExpiry.getText().trim();
 
             if (!ValidationUtils.isNotEmpty(itemName) || !ValidationUtils.isValidNumber(qtyStr) || !ValidationUtils.isNotEmpty(type)) {
-                JOptionPane.showMessageDialog(this, "Please fix validation errors.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please check Name, Quantity, and Type.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -137,10 +150,14 @@ public class SupplyPanel extends JPanel {
                 s.setItemName(itemName);
                 s.setQuantity(Integer.parseInt(qtyStr));
                 s.setType(type);
-                s.setExpiryDate(LocalDate.now().plusMonths(6));
+                if (ValidationUtils.isNotEmpty(expiryStr)) {
+                    s.setExpiryDate(LocalDate.parse(expiryStr));
+                } else {
+                    s.setExpiryDate(null);
+                }
 
-                String selected = (String) comboLocation.getSelectedItem();
-                int locId = (selected != null) ? Integer.parseInt(selected.split(" - ")[0]) : 1;
+                Location selected = (Location) comboLocation.getSelectedItem();
+                int locId = (selected != null) ? selected.getLocationId() : -1;
 
                 supplyDAO.addSupplyWithLocation(s, locId);
                 JOptionPane.showMessageDialog(this, "Supply Added Successfully!");
@@ -255,6 +272,7 @@ public class SupplyPanel extends JPanel {
                     txtItemName.setText(tableModel.getValueAt(row, 1).toString());
                     txtQuantity.setText(tableModel.getValueAt(row, 2).toString());
                     txtType.setText(tableModel.getValueAt(row, 3).toString());
+                    txtExpiry.setText(tableModel.getValueAt(row, 4) != null ? tableModel.getValueAt(row, 4).toString() : "");
                 }
             }
         });
@@ -274,12 +292,12 @@ public class SupplyPanel extends JPanel {
         }
     }
 
-    private void loadLocations(JComboBox<String> combo) {
+    private void loadLocations(JComboBox<Location> combo) {
         try {
             LocationDAO locDAO = new LocationDAO();
             List<Location> locations = locDAO.getAllLocations();
             for (Location l : locations) {
-                combo.addItem(l.getLocationId() + " - " + l.getName());
+                combo.addItem(l);
             }
         } catch (SQLException e) {
             e.printStackTrace();

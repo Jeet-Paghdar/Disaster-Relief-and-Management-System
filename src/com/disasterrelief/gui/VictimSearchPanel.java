@@ -71,7 +71,7 @@ public class VictimSearchPanel extends JPanel {
         topSection.add(searchBar, BorderLayout.CENTER);
 
         // Results Table
-        String[] columns = {"ID", "First Name", "Last Name", "DOB", "Gender", "Blood", "Location", "Phone", "Injury", "Disaster"};
+        String[] columns = {"ID", "First Name", "Last Name", "DOB", "Age", "Gender", "Blood", "Location", "Phone", "Injury", "Disaster"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
@@ -85,6 +85,10 @@ public class VictimSearchPanel extends JPanel {
 
         add(topSection, BorderLayout.NORTH);
         add(new JScrollPane(resultTable), BorderLayout.CENTER);
+
+        // Adjust column widths
+        resultTable.getColumnModel().getColumn(0).setPreferredWidth(40); // ID
+        resultTable.getColumnModel().getColumn(7).setPreferredWidth(200); // Location
 
         // Actions
         btnSearch.addActionListener(e -> performSearch());
@@ -134,8 +138,8 @@ public class VictimSearchPanel extends JPanel {
         for (Victim v : victims) {
             tableModel.addRow(new Object[]{
                 v.getPersonId(), v.getFirstName(), v.getLastName(),
-                v.getDob(), v.getGender(), v.getBloodType(),
-                v.getAddressAfter(), v.getPhoneNumber(), v.getInjuryStatus(),
+                v.getDob(), v.getAge(), v.getGender(), v.getBloodType(),
+                v.getLocationName(), v.getPhoneNumber(), v.getInjuryStatus(),
                 v.getDisasterId()
             });
         }

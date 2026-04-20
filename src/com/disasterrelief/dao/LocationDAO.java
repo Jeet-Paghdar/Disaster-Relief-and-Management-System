@@ -11,9 +11,7 @@ public class LocationDAO {
 
     public void addLocation(Location location) throws SQLException {
         String sql = "INSERT INTO LOCATION (NAME, ADDRESS, TYPE, PINCODE, CAPACITY) VALUES (?, ?, ?, ?, ?)";
-
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, location.getName());
             stmt.setString(2, location.getAddress());
             stmt.setString(3, location.getType());
@@ -25,10 +23,8 @@ public class LocationDAO {
 
     public List<Location> getAllLocations() throws SQLException {
         List<Location> locations = new ArrayList<>();
-        String sql = "SELECT * FROM LOCATION";
-
+        String sql = "SELECT *, fn_count_victims_in_camp(LOCATION_ID) AS OCCUPANCY FROM LOCATION";
         try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
                 Location l = new Location(
                         rs.getInt("LOCATION_ID"),
@@ -36,7 +32,8 @@ public class LocationDAO {
                         rs.getString("ADDRESS"),
                         rs.getString("TYPE"),
                         rs.getString("PINCODE"),
-                        rs.getInt("CAPACITY")
+                        rs.getInt("CAPACITY"),
+                        rs.getInt("OCCUPANCY")
                 );
                 locations.add(l);
             }
@@ -46,7 +43,6 @@ public class LocationDAO {
 
     public void updateLocation(Location location) throws SQLException {
         String sql = "UPDATE LOCATION SET NAME = ?, ADDRESS = ?, TYPE = ?, PINCODE = ?, CAPACITY = ? WHERE LOCATION_ID = ?";
-
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, location.getName());
             stmt.setString(2, location.getAddress());
@@ -59,13 +55,11 @@ public class LocationDAO {
     }
 
     public void updateCapacity(int locationId, int capacity) throws SQLException {
-        String sql = "UPDATE LOCATION SET CAPACITY = ? WHERE LOCATION_ID = ?";
-
-        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, capacity);
-            stmt.setInt(2, locationId);
-            stmt.executeUpdate();
+        String sql = "{CALL sp_update_camp_capacity(?, ?)}";
+        try (Connection conn = DBConnection.getConnection(); CallableStatement stmt = conn.prepareCall(sql)) {
+            stmt.setInt(1, locationId);
+            stmt.setInt(2, capacity);
+            stmt.execute();
         }
     }
 

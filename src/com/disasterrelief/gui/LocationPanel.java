@@ -75,15 +75,10 @@ public class LocationPanel extends JPanel {
         gbc.gridx = 1; 
         formContainer.add(comboType, gbc);
   
-        gbc.gridx = 2; 
+        gbc.gridx = 2;
         formContainer.add(new JLabel("Pincode:"), gbc);
         gbc.gridx = 3; 
         formContainer.add(txtPincode, gbc);
- 
-        gbc.gridx = 0; gbc.gridy = 2; 
-        formContainer.add(new JLabel("Capacity:"), gbc);
-        gbc.gridx = 1; 
-        formContainer.add(txtCapacity, gbc);
 
         // Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
@@ -97,6 +92,11 @@ public class LocationPanel extends JPanel {
         btnPanel.add(btnDelete);
         btnPanel.add(btnRefresh);
 
+        gbc.gridx = 0; gbc.gridy = 2; 
+        formContainer.add(new JLabel("Capacity:"), gbc);
+        gbc.gridx = 1; 
+        formContainer.add(txtCapacity, gbc);
+
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 4;
@@ -107,7 +107,7 @@ public class LocationPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"Loc ID", "Name", "Address", "Type", "Pincode", "Capacity"};
+        String[] cols = {"Loc ID", "Name", "Address", "Type", "Pincode", "Cap", "Occ"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -145,6 +145,7 @@ public class LocationPanel extends JPanel {
                 loc.setType((String) comboType.getSelectedItem());
                 loc.setPincode(pincode);
                 loc.setCapacity(Integer.parseInt(capacityStr));
+                
 
                 locationDAO.addLocation(loc);
                 JOptionPane.showMessageDialog(this, "Location Added Successfully!");
@@ -175,6 +176,7 @@ public class LocationPanel extends JPanel {
             updateType.setSelectedItem(tableModel.getValueAt(row, 3).toString());
             JTextField updatePincode = new JTextField(tableModel.getValueAt(row, 4).toString());
             JTextField updateCapacity = new JTextField(tableModel.getValueAt(row, 5).toString());
+            
 
             form.add(new JLabel("Name:")); form.add(updateName);
             form.add(new JLabel("Address:")); form.add(updateAddr);
@@ -214,6 +216,8 @@ public class LocationPanel extends JPanel {
                     loc.setType((String) updateType.getSelectedItem());
                     loc.setPincode(pincode);
                     loc.setCapacity(Integer.parseInt(capacityStr));
+                    
+                    
 
                     locationDAO.updateLocation(loc);
                     JOptionPane.showMessageDialog(dialog, "Location Updated Successfully!");
@@ -237,7 +241,7 @@ public class LocationPanel extends JPanel {
             int confirm = JOptionPane.showConfirmDialog(this, 
                 "CAUTION: Deleting this Location will also delete all linked records in:\n" +
                 "- LOCATION_SUPPLY\n" +
-                "- RELIEF_SERVICE (Matches tied to this location)\n" +
+                "- MATCH_REGISTRY (Matches tied to this location)\n" +
                 "Are you sure you want to proceed?", "Confirm Cascaded Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             
             if (confirm == JOptionPane.YES_OPTION) {
@@ -251,7 +255,9 @@ public class LocationPanel extends JPanel {
             }
         });
 
-        btnRefresh.addActionListener(e -> loadTableData());
+        btnRefresh.addActionListener(e -> {
+            loadTableData();
+        });
 
         // Row Selection Listener
         locationTable.getSelectionModel().addListSelectionListener(e -> {
@@ -263,6 +269,8 @@ public class LocationPanel extends JPanel {
                     comboType.setSelectedItem(tableModel.getValueAt(row, 3).toString());
                     txtPincode.setText(tableModel.getValueAt(row, 4).toString());
                     txtCapacity.setText(tableModel.getValueAt(row, 5).toString());
+                    
+                    
                 }
             }
         });
@@ -276,7 +284,7 @@ public class LocationPanel extends JPanel {
             List<Location> locations = locationDAO.getAllLocations();
             for (Location loc : locations) {
                 tableModel.addRow(new Object[]{
-                        loc.getLocationId(), loc.getName(), loc.getAddress(), loc.getType(), loc.getPincode(), loc.getCapacity()
+                        loc.getLocationId(), loc.getName(), loc.getAddress(), loc.getType(), loc.getPincode(), loc.getCapacity(), loc.getCurrentOccupancy()
                 });
             }
         } catch (SQLException e) {

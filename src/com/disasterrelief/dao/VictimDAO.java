@@ -11,7 +11,7 @@ public class VictimDAO {
 
     public void addVictim(Victim victim) throws SQLException {
         String personSQL = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, DOB, GENDER, EMAIL, PHONE_NUMBER) VALUES (?, ?, ?, ?, ?, ?)";
-        String victimSQL = "INSERT INTO VICTIM (VICTIM_ID, ADDRESS_BEFORE, ADDRESS_AFTER, INJURY_STATUS, ENTRY_DATE, DISASTER_ID, BLOOD_TYPE) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String victimSQL = "INSERT INTO VICTIM (VICTIM_ID, LOCATION_ID, INJURY_STATUS, ENTRY_DATE, DISASTER_ID, BLOOD_TYPE) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false); // Start transaction
@@ -36,12 +36,11 @@ public class VictimDAO {
 
                 try (PreparedStatement victimStmt = conn.prepareStatement(victimSQL)) {
                     victimStmt.setInt(1, personId);
-                    victimStmt.setString(2, victim.getAddressBefore());
-                    victimStmt.setString(3, victim.getAddressAfter());
-                    victimStmt.setString(4, victim.getInjuryStatus());
-                    victimStmt.setDate(5, victim.getEntryDate() != null ? Date.valueOf(victim.getEntryDate()) : null);
-                    victimStmt.setInt(6, victim.getDisasterId());
-                    victimStmt.setString(7, victim.getBloodType());
+                    victimStmt.setInt(2, victim.getLocationId());
+                    victimStmt.setString(3, victim.getInjuryStatus());
+                    victimStmt.setDate(4, victim.getEntryDate() != null ? Date.valueOf(victim.getEntryDate()) : null);
+                    victimStmt.setInt(5, victim.getDisasterId());
+                    victimStmt.setString(6, victim.getBloodType());
                     victimStmt.executeUpdate();
                 }
 
@@ -72,8 +71,9 @@ public class VictimDAO {
 
     public List<Victim> getAllVictims() throws SQLException {
         List<Victim> victims = new ArrayList<>();
-        String sql = "SELECT p.*, fn_calculate_age(p.DOB) AS AGE, v.ADDRESS_BEFORE, v.ADDRESS_AFTER, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, v.BLOOD_TYPE, dr.RESTRICTION_TYPE "
+        String sql = "SELECT p.*, fn_calculate_age(p.DOB) AS AGE, v.LOCATION_ID, CONCAT(l.NAME, ' (', l.ADDRESS, ')') AS LOCATION_NAME, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, v.BLOOD_TYPE, dr.RESTRICTION_TYPE "
                 + "FROM PERSON p JOIN VICTIM v ON p.PERSON_ID = v.VICTIM_ID "
+                + "LEFT JOIN LOCATION l ON v.LOCATION_ID = l.LOCATION_ID "
                 + "LEFT JOIN VICTIM_DIETARY_RESTRICTIONS dr ON v.VICTIM_ID = dr.VICTIM_ID";
 
         try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
@@ -85,16 +85,31 @@ public class VictimDAO {
         return victims;
     }
 
-    public List<Victim> searchVictimsByName(String firstName) throws SQLException {
+    public List<Victim> searchVictims(String query, String criteria) throws SQLException, com.disasterrelief.exceptions.VictimNotFoundException {
         List<Victim> victims = new ArrayList<>();
-        String sql = "SELECT p.*, fn_calculate_age(p.DOB) AS AGE, v.ADDRESS_BEFORE, v.ADDRESS_AFTER, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, v.BLOOD_TYPE, dr.RESTRICTION_TYPE "
-                + "FROM PERSON p JOIN VICTIM v ON p.PERSON_ID = v.VICTIM_ID "
-                + "LEFT JOIN VICTIM_DIETARY_RESTRICTIONS dr ON v.VICTIM_ID = dr.VICTIM_ID "
-                + "WHERE p.FIRST_NAME LIKE ?";
+        StringBuilder sql = new StringBuilder(
+            "SELECT p.*, fn_calculate_age(p.DOB) AS AGE, v.LOCATION_ID, CONCAT(l.NAME, ' (', l.ADDRESS, ')') AS LOCATION_NAME, v.INJURY_STATUS, v.ENTRY_DATE, v.DISASTER_ID, v.BLOOD_TYPE, dr.RESTRICTION_TYPE " +
+            "FROM PERSON p JOIN VICTIM v ON p.PERSON_ID = v.VICTIM_ID " +
+            "LEFT JOIN LOCATION l ON v.LOCATION_ID = l.LOCATION_ID " +
+            "LEFT JOIN VICTIM_DIETARY_RESTRICTIONS dr ON v.VICTIM_ID = dr.VICTIM_ID ");
 
-        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        if ("ID".equalsIgnoreCase(criteria)) {
+            sql.append("WHERE p.PERSON_ID = ?");
+        } else if ("PHONE".equalsIgnoreCase(criteria)) {
+            sql.append("WHERE p.PHONE_NUMBER LIKE ?");
+        } else { // NAME
+            sql.append("WHERE p.FIRST_NAME LIKE ? OR p.LAST_NAME LIKE ?");
+        }
 
-            stmt.setString(1, "%" + firstName + "%");
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            if ("ID".equalsIgnoreCase(criteria)) {
+                stmt.setInt(1, Integer.parseInt(query));
+            } else if ("PHONE".equalsIgnoreCase(criteria)) {
+                stmt.setString(1, "%" + query + "%");
+            } else { // NAME
+                stmt.setString(1, "%" + query + "%");
+                stmt.setString(2, "%" + query + "%");
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -102,13 +117,17 @@ public class VictimDAO {
                 }
             }
         }
-
+        
+        if (victims.isEmpty()) {
+            throw new com.disasterrelief.exceptions.VictimNotFoundException("No victim found matching " + criteria + ": " + query);
+        }
+        
         return victims;
     }
 
     public void updateVictim(Victim victim) throws SQLException {
-        String personSQL = "UPDATE PERSON SET FIRST_NAME = ?, LAST_NAME = ?, DOB = ?, AGE = ?, GENDER = ?, EMAIL = ?, PHONE_NUMBER = ? WHERE PERSON_ID = ?";
-        String victimSQL = "UPDATE VICTIM SET ADDRESS_BEFORE = ?, ADDRESS_AFTER = ?, INJURY_STATUS = ?, ENTRY_DATE = ?, DISASTER_ID = ? WHERE VICTIM_ID = ?";
+        String personSQL = "UPDATE PERSON SET FIRST_NAME = ?, LAST_NAME = ?, DOB = ?, GENDER = ?, EMAIL = ?, PHONE_NUMBER = ? WHERE PERSON_ID = ?";
+        String victimSQL = "UPDATE VICTIM SET LOCATION_ID = ?, INJURY_STATUS = ?, ENTRY_DATE = ?, DISASTER_ID = ?, BLOOD_TYPE = ? WHERE VICTIM_ID = ?";
         String deleteDietSQL = "DELETE FROM VICTIM_DIETARY_RESTRICTIONS WHERE VICTIM_ID = ?";
         String insertDietSQL = "INSERT INTO VICTIM_DIETARY_RESTRICTIONS (VICTIM_ID, RESTRICTION_TYPE) VALUES (?, ?)";
 
@@ -121,21 +140,20 @@ public class VictimDAO {
                     personStmt.setString(1, victim.getFirstName());
                     personStmt.setString(2, victim.getLastName());
                     personStmt.setDate(3, victim.getDob() != null ? Date.valueOf(victim.getDob()) : null);
-                    personStmt.setInt(4, victim.getAge());
-                    personStmt.setString(5, victim.getGender());
-                    personStmt.setString(6, victim.getEmail());
-                    personStmt.setString(7, victim.getPhoneNumber());
-                    personStmt.setInt(8, victim.getPersonId());
+                    personStmt.setString(4, victim.getGender());
+                    personStmt.setString(5, victim.getEmail());
+                    personStmt.setString(6, victim.getPhoneNumber());
+                    personStmt.setInt(7, victim.getPersonId());
                     personStmt.executeUpdate();
                 }
 
                 // Update VICTIM table
                 try (PreparedStatement victimStmt = conn.prepareStatement(victimSQL)) {
-                    victimStmt.setString(1, victim.getAddressBefore());
-                    victimStmt.setString(2, victim.getAddressAfter());
-                    victimStmt.setString(3, victim.getInjuryStatus());
-                    victimStmt.setDate(4, victim.getEntryDate() != null ? Date.valueOf(victim.getEntryDate()) : null);
-                    victimStmt.setInt(5, victim.getDisasterId());
+                    victimStmt.setInt(1, victim.getLocationId());
+                    victimStmt.setString(2, victim.getInjuryStatus());
+                    victimStmt.setDate(3, victim.getEntryDate() != null ? Date.valueOf(victim.getEntryDate()) : null);
+                    victimStmt.setInt(4, victim.getDisasterId());
+                    victimStmt.setString(5, victim.getBloodType());
                     victimStmt.setInt(6, victim.getPersonId());
                     victimStmt.executeUpdate();
                 }
@@ -176,59 +194,10 @@ public class VictimDAO {
     }
 
     public void deleteVictim(int victimId) throws SQLException {
-        try (Connection conn = DBConnection.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                // 1. Delete Medical Records
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM MEDICAL_RECORD WHERE VICTIM_ID = ?")) {
-                    stmt.setInt(1, victimId);
-                    stmt.executeUpdate();
-                }
-
-                // 2. Delete Dietary Restrictions
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM VICTIM_DIETARY_RESTRICTIONS WHERE VICTIM_ID = ?")) {
-                    stmt.setInt(1, victimId);
-                    stmt.executeUpdate();
-                }
-
-                // 3. Delete Family Relations
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM FAMILY_RELATION WHERE VICTIM1_ID = ? OR VICTIM2_ID = ?")) {
-                    stmt.setInt(1, victimId);
-                    stmt.setInt(2, victimId);
-                    stmt.executeUpdate();
-                }
-
-                // 4. Delete Supply Links
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM VICTIM_SUPPLY WHERE VICTIM_ID = ?")) {
-                    stmt.setInt(1, victimId);
-                    stmt.executeUpdate();
-                }
-
-                // 5. Delete Relief Services
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM RELIEF_SERVICE WHERE VICTIM_ID = ?")) {
-                    stmt.setInt(1, victimId);
-                    stmt.executeUpdate();
-                }
-
-                // 6. Delete Victim Record
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM VICTIM WHERE VICTIM_ID = ?")) {
-                    stmt.setInt(1, victimId);
-                    stmt.executeUpdate();
-                }
-
-                // 7. Finally delete from PERSON
-                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM PERSON WHERE PERSON_ID = ?")) {
-                    stmt.setInt(1, victimId);
-                    stmt.executeUpdate();
-                }
-
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
+        String sql = "{CALL sp_cascade_delete_victim(?)}";
+        try (Connection conn = DBConnection.getConnection(); CallableStatement stmt = conn.prepareCall(sql)) {
+            stmt.setInt(1, victimId);
+            stmt.execute();
         }
     }
 
@@ -248,12 +217,12 @@ public class VictimDAO {
                 rs.getString("GENDER"),
                 rs.getString("EMAIL"),
                 rs.getString("PHONE_NUMBER"),
-                rs.getString("ADDRESS_BEFORE"),
-                rs.getString("ADDRESS_AFTER"),
+                rs.getInt("LOCATION_ID"),
                 rs.getString("INJURY_STATUS"),
                 entryDate,
                 rs.getInt("DISASTER_ID")
         );
+        victim.setLocationName(rs.getString("LOCATION_NAME"));
         victim.setBloodType(rs.getString("BLOOD_TYPE"));
 
         String dietary = rs.getString("RESTRICTION_TYPE");

@@ -28,7 +28,11 @@ public class MedicalDAO {
 
     public List<MedicalRecord> getMedicalRecords(int victimId) throws SQLException {
         List<MedicalRecord> records = new ArrayList<>();
-        String sql = "SELECT m.*, v.BLOOD_TYPE FROM MEDICAL_RECORD m LEFT JOIN VICTIM v ON m.VICTIM_ID = v.VICTIM_ID WHERE m.VICTIM_ID = ?";
+        String sql = "SELECT m.*, v.BLOOD_TYPE, fn_calculate_age(p.DOB) AS AGE " +
+                     "FROM MEDICAL_RECORD m " +
+                     "LEFT JOIN VICTIM v ON m.VICTIM_ID = v.VICTIM_ID " +
+                     "LEFT JOIN PERSON p ON v.VICTIM_ID = p.PERSON_ID " +
+                     "WHERE m.VICTIM_ID = ?";
 
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -44,6 +48,7 @@ public class MedicalDAO {
                     MedicalRecord r = new MedicalRecord(
                             rs.getInt("RECORD_NUMBER"),
                             rs.getInt("VICTIM_ID"),
+                            rs.getInt("AGE"),
                             rs.getString("BLOOD_TYPE"),
                             rs.getString("PRESCRIPTIONS"),
                             rs.getString("TREATMENT_DETAILS"),
@@ -59,7 +64,10 @@ public class MedicalDAO {
 
     public List<MedicalRecord> getAllMedicalRecords() throws SQLException {
         List<MedicalRecord> records = new ArrayList<>();
-        String sql = "SELECT m.*, v.BLOOD_TYPE FROM MEDICAL_RECORD m LEFT JOIN VICTIM v ON m.VICTIM_ID = v.VICTIM_ID";
+        String sql = "SELECT m.*, v.BLOOD_TYPE, fn_calculate_age(p.DOB) AS AGE " +
+                     "FROM MEDICAL_RECORD m " +
+                     "LEFT JOIN VICTIM v ON m.VICTIM_ID = v.VICTIM_ID " +
+                     "LEFT JOIN PERSON p ON v.VICTIM_ID = p.PERSON_ID";
 
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
@@ -69,6 +77,7 @@ public class MedicalDAO {
                 MedicalRecord r = new MedicalRecord(
                         rs.getInt("RECORD_NUMBER"),
                         rs.getInt("VICTIM_ID"),
+                        rs.getInt("AGE"),
                         rs.getString("BLOOD_TYPE"),
                         rs.getString("PRESCRIPTIONS"),
                         rs.getString("TREATMENT_DETAILS"),
@@ -82,30 +91,15 @@ public class MedicalDAO {
     }
 
     public void updateMedicalRecord(MedicalRecord record) throws SQLException {
-        String medSql = "UPDATE MEDICAL_RECORD SET PRESCRIPTIONS = ?, TREATMENT_DETAILS = ? WHERE RECORD_NUMBER = ?";
-        String vicSql = "UPDATE VICTIM SET BLOOD_TYPE = ? WHERE VICTIM_ID = ?";
-
-        try (Connection conn = DBConnection.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                try (PreparedStatement stmt = conn.prepareStatement(medSql)) {
-                    stmt.setString(1, record.getPrescriptions());
-                    stmt.setString(2, record.getTreatmentDetails());
-                    stmt.setInt(3, record.getRecordNumber());
-                    stmt.executeUpdate();
-                }
-                try (PreparedStatement stmt2 = conn.prepareStatement(vicSql)) {
-                    stmt2.setString(1, record.getBloodType());
-                    stmt2.setInt(2, record.getVictimId());
-                    stmt2.executeUpdate();
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
+        String sql = "{CALL sp_unified_medical_update(?, ?, ?, ?, ?, ?)}";
+        try (Connection conn = DBConnection.getConnection(); CallableStatement stmt = conn.prepareCall(sql)) {
+            stmt.setInt(1, record.getRecordNumber());
+            stmt.setString(2, record.getPrescriptions());
+            stmt.setString(3, record.getTreatmentDetails());
+            stmt.setDate(4, record.getTreatmentDate() != null ? Date.valueOf(record.getTreatmentDate()) : null);
+            stmt.setInt(5, record.getVictimId());
+            stmt.setString(6, record.getBloodType());
+            stmt.execute();
         }
     }
 

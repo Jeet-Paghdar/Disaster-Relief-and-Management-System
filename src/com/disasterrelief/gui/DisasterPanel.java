@@ -239,8 +239,7 @@ public class DisasterPanel extends JPanel {
                 "CAUTION: Deleting this Disaster will also delete all linked records in:\n" +
                 "- VICTIM\n" +
                 "- MEDICAL_RECORD\n" +
-                "- RELIEF_SERVICE\n" +
-                "- FAMILY_RELATION\n" +
+                "- MATCH_REGISTRY\n" +
                 "Are you sure you want to proceed?", "Confirm Cascaded Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             
             if (confirm == JOptionPane.YES_OPTION) {

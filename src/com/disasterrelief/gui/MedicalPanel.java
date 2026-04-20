@@ -46,6 +46,8 @@ public class MedicalPanel extends JPanel {
         txtTreatments.setPreferredSize(fieldSize);
         JTextField txtWorkerId = new JTextField();
         txtWorkerId.setPreferredSize(fieldSize);
+        JTextField txtDate = new JTextField();
+        txtDate.setPreferredSize(fieldSize);
 
         // Auto-fetch Blood Type when Victim ID is entered
         txtVictimId.addFocusListener(new java.awt.event.FocusAdapter() {
@@ -89,12 +91,16 @@ public class MedicalPanel extends JPanel {
         gbc.gridx = 3;
         formContainer.add(txtTreatments, gbc);
 
-        // Row 2: Worker ID
+        // Row 2: Worker ID & Date
         gbc.gridy = 2;
         gbc.gridx = 0;
         formContainer.add(new JLabel("Worker ID:"), gbc);
         gbc.gridx = 1;
         formContainer.add(txtWorkerId, gbc);
+        gbc.gridx = 2;
+        formContainer.add(new JLabel("Date (yyyy-mm-dd):"), gbc);
+        gbc.gridx = 3;
+        formContainer.add(txtDate, gbc);
 
         // Row 3: Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
@@ -116,7 +122,7 @@ public class MedicalPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"Record #", "Victim ID", "Blood", "Prescriptions", "Treatments", "Date", "Worker ID"};
+        String[] cols = {"Record #", "Victim ID", "Age", "Blood", "Prescriptions", "Treatments", "Date", "Worker ID"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -140,6 +146,7 @@ public class MedicalPanel extends JPanel {
             String pres = txtPrescriptions.getText().trim();
             String treats = txtTreatments.getText().trim();
             String wIdStr = txtWorkerId.getText().trim();
+            String dateStr = txtDate.getText().trim();
 
             if (!ValidationUtils.isValidNumber(vIdStr) || !ValidationUtils.isNotEmpty(blood) || 
                 !ValidationUtils.isNotEmpty(treats) || !ValidationUtils.isValidNumber(wIdStr)) {
@@ -147,10 +154,18 @@ public class MedicalPanel extends JPanel {
                 return;
             }
 
+            LocalDate treatmentDate;
+            try {
+                treatmentDate = LocalDate.parse(dateStr);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Invalid Date format. Use YYYY-MM-DD.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             try {
                 MedicalRecord record = new MedicalRecord(
                         0, Integer.parseInt(vIdStr), blood, pres, 
-                        treats, LocalDate.now(), Integer.parseInt(wIdStr)
+                        treats, treatmentDate, Integer.parseInt(wIdStr)
                 );
                 medicalDAO.addMedicalRecord(record);
                 JOptionPane.showMessageDialog(this, "Medical Record Added Successfully!");
@@ -168,21 +183,24 @@ public class MedicalPanel extends JPanel {
             }
 
             JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Update Medical Record", true);
-            dialog.setSize(400, 200);
+            dialog.setSize(400, 250);
             dialog.setLayout(new BorderLayout());
             dialog.setLocationRelativeTo(this);
 
-            JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
+            JPanel form = new JPanel(new GridLayout(4, 2, 10, 10));
             form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
             JComboBox<String> updateBlood = new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"});
-            updateBlood.setSelectedItem(tableModel.getValueAt(row, 2).toString());
-            JTextField updatePres = new JTextField(tableModel.getValueAt(row, 3).toString());
-            JTextField updateTreats = new JTextField(tableModel.getValueAt(row, 4).toString());
+            updateBlood.setSelectedItem(tableModel.getValueAt(row, 3).toString());
+            JTextField updatePres = new JTextField(tableModel.getValueAt(row, 4).toString());
+            JTextField updateTreats = new JTextField(tableModel.getValueAt(row, 5).toString());
+            String existingDate = tableModel.getValueAt(row, 6) != null ? tableModel.getValueAt(row, 6).toString() : "";
+            JTextField updateDate = new JTextField(existingDate);
 
             form.add(new JLabel("Blood Type:")); form.add(updateBlood);
             form.add(new JLabel("Prescriptions:")); form.add(updatePres);
             form.add(new JLabel("Treatments:")); form.add(updateTreats);
+            form.add(new JLabel("Date (yyyy-mm-dd):")); form.add(updateDate);
 
             dialog.add(form, BorderLayout.CENTER);
 
@@ -199,9 +217,18 @@ public class MedicalPanel extends JPanel {
                 String blood = (String) updateBlood.getSelectedItem();
                 String pres = updatePres.getText().trim();
                 String treats = updateTreats.getText().trim();
+                String dateStr = updateDate.getText().trim();
 
                 if (!ValidationUtils.isNotEmpty(blood) || !ValidationUtils.isNotEmpty(treats)) {
                     JOptionPane.showMessageDialog(dialog, "Blood Type and Treatments are required for update.");
+                    return;
+                }
+                
+                LocalDate treatmentDate;
+                try {
+                    treatmentDate = LocalDate.parse(dateStr);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Invalid Date format. Use YYYY-MM-DD.");
                     return;
                 }
 
@@ -213,6 +240,7 @@ public class MedicalPanel extends JPanel {
                     record.setBloodType(blood);
                     record.setPrescriptions(pres);
                     record.setTreatmentDetails(treats);
+                    record.setTreatmentDate(treatmentDate);
 
                     medicalDAO.updateMedicalRecord(record);
                     JOptionPane.showMessageDialog(dialog, "Medical Record Updated Successfully!");
@@ -251,10 +279,11 @@ public class MedicalPanel extends JPanel {
                 int row = medicalTable.getSelectedRow();
                 if (row >= 0) {
                     txtVictimId.setText(tableModel.getValueAt(row, 1).toString());
-                    comboBlood.setSelectedItem(tableModel.getValueAt(row, 2).toString());
-                    txtPrescriptions.setText(tableModel.getValueAt(row, 3).toString());
-                    txtTreatments.setText(tableModel.getValueAt(row, 4).toString());
-                    txtWorkerId.setText(tableModel.getValueAt(row, 6).toString());
+                    comboBlood.setSelectedItem(tableModel.getValueAt(row, 3).toString());
+                    txtPrescriptions.setText(tableModel.getValueAt(row, 4).toString());
+                    txtTreatments.setText(tableModel.getValueAt(row, 5).toString());
+                    txtDate.setText(tableModel.getValueAt(row, 6) != null ? tableModel.getValueAt(row, 6).toString() : "");
+                    txtWorkerId.setText(tableModel.getValueAt(row, 7).toString());
                 }
             }
         });
@@ -268,7 +297,7 @@ public class MedicalPanel extends JPanel {
             List<MedicalRecord> records = medicalDAO.getAllMedicalRecords();
             for (MedicalRecord m : records) {
                 tableModel.addRow(new Object[]{
-                        m.getRecordNumber(), m.getVictimId(), m.getBloodType(),
+                        m.getRecordNumber(), m.getVictimId(), m.getAge(), m.getBloodType(),
                         m.getPrescriptions(), m.getTreatmentDetails(), m.getTreatmentDate(), m.getWorkerId()
                 });
             }

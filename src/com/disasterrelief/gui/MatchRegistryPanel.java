@@ -52,7 +52,7 @@ public class MatchRegistryPanel extends JPanel {
         
         add(topContainer, BorderLayout.NORTH);
 
-        String[] cols = {"ID", "Inquirer Name", "Victim Name", "Relationship / Info"};
+        String[] cols = {"ID", "Inquirer Name", "Victim Name", "Victim Location", "Relationship / Info"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
@@ -64,9 +64,9 @@ public class MatchRegistryPanel extends JPanel {
         matchTable.getTableHeader().setForeground(Color.WHITE);
         matchTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         
-        matchTable.getColumnModel().getColumn(0).setMinWidth(0);
-        matchTable.getColumnModel().getColumn(0).setMaxWidth(0);
-        matchTable.getColumnModel().getColumn(0).setWidth(0);
+        // Show Match ID with a reasonable width
+        matchTable.getColumnModel().getColumn(0).setMaxWidth(80);
+        matchTable.getColumnModel().getColumn(0).setPreferredWidth(60);
 
         add(new JScrollPane(matchTable), BorderLayout.CENTER);
 
@@ -77,8 +77,8 @@ public class MatchRegistryPanel extends JPanel {
                 return;
             }
             
-            int serviceId = (int) tableModel.getValueAt(row, 0);
-            String currentInfo = (String) tableModel.getValueAt(row, 3);
+            int matchId = (int) tableModel.getValueAt(row, 0);
+            String currentInfo = (String) tableModel.getValueAt(row, 4);
 
             JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Update Match Information", true);
             dialog.setSize(400, 200);
@@ -101,7 +101,7 @@ public class MatchRegistryPanel extends JPanel {
             cancel.addActionListener(ev -> dialog.dispose());
             save.addActionListener(ev -> {
                 try {
-                    inquirerDAO.updateMatchById(serviceId, infoField.getText().trim());
+                    inquirerDAO.updateMatchById(matchId, infoField.getText().trim());
                     JOptionPane.showMessageDialog(dialog, "Match Updated!");
                     dialog.dispose();
                     loadData();
@@ -119,11 +119,11 @@ public class MatchRegistryPanel extends JPanel {
                 return;
             }
             
-            int serviceId = (int) tableModel.getValueAt(row, 0);
+            int matchId = (int) tableModel.getValueAt(row, 0);
             int confirm = JOptionPane.showConfirmDialog(this, "Remove this match record?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
-                    inquirerDAO.deleteMatchById(serviceId);
+                    inquirerDAO.deleteMatchById(matchId);
                     JOptionPane.showMessageDialog(this, "Match record removed.");
                     loadData();
                 } catch (Exception ex) {

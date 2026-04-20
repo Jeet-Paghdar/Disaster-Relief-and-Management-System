@@ -128,7 +128,7 @@ public class WorkerPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // Table
-        String[] cols = { "ID", "First Name", "Last Name", "DOB", "Email", "Specialty", "Shift" };
+        String[] cols = { "ID", "First Name", "Last Name", "DOB", "Age", "Email", "Specialty", "Shift" };
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -338,7 +338,7 @@ public class WorkerPanel extends JPanel {
             for (SocialWorker w : workers) {
                 tableModel.addRow(new Object[] {
                         w.getEmployeeId(), w.getFirstName(), w.getLastName(),
-                        w.getDob(), w.getEmail(),
+                        w.getDob(), w.getAge(), w.getEmail(),
                         w.getSpecialisation(), w.getWorkShift()
                 });
             }

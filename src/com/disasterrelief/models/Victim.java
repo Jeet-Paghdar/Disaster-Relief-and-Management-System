@@ -4,8 +4,8 @@ import java.time.LocalDate;
 
 public class Victim extends Person {
 
-    private String addressBefore;
-    private String addressAfter;
+    private int locationId;
+    private String locationName; // Transient, for display
     private String injuryStatus;
     private LocalDate entryDate;
     private int disasterId;
@@ -17,30 +17,29 @@ public class Victim extends Person {
 
     public Victim(int personId, String firstName, String lastName,
             LocalDate dob, int age, String gender, String email,
-            String phoneNumber, String addressBefore, String addressAfter,
+            String phoneNumber, int locationId,
             String injuryStatus, LocalDate entryDate, int disasterId) {
         super(personId, firstName, lastName, dob, age, gender, email, phoneNumber);
-        this.addressBefore = addressBefore;
-        this.addressAfter = addressAfter;
+        this.locationId = locationId;
         this.injuryStatus = injuryStatus;
         setEntryDate(entryDate);
         this.disasterId = disasterId;
     }
 
-    public String getAddressBefore() {
-        return addressBefore;
+    public int getLocationId() {
+        return locationId;
     }
 
-    public void setAddressBefore(String addressBefore) {
-        this.addressBefore = addressBefore;
+    public void setLocationId(int locationId) {
+        this.locationId = locationId;
     }
 
-    public String getAddressAfter() {
-        return addressAfter;
+    public String getLocationName() {
+        return locationName;
     }
 
-    public void setAddressAfter(String addressAfter) {
-        this.addressAfter = addressAfter;
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
     }
 
     public String getInjuryStatus() {

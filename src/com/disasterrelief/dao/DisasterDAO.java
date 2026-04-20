@@ -156,7 +156,7 @@ public class DisasterDAO {
             conn.setAutoCommit(false);
             try {
                 // Delete everything linked to victims of this disaster first
-                String[] victimIdTables = {"MEDICAL_RECORD", "VICTIM_DIETARY_RESTRICTIONS", "VICTIM_SUPPLY", "RELIEF_SERVICE"};
+                String[] victimIdTables = {"MEDICAL_RECORD", "VICTIM_DIETARY_RESTRICTIONS", "VICTIM_SUPPLY", "MATCH_REGISTRY"};
                 for (String table : victimIdTables) {
                     String sql = "DELETE FROM " + table + " WHERE VICTIM_ID IN (SELECT VICTIM_ID FROM VICTIM WHERE DISASTER_ID = ?)";
                     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -165,14 +165,7 @@ public class DisasterDAO {
                     }
                 }
 
-                // Handle FAMILY_RELATION separately (it has VICTIM1_ID and VICTIM2_ID)
-                String familySql = "DELETE FROM FAMILY_RELATION WHERE VICTIM1_ID IN (SELECT VICTIM_ID FROM VICTIM WHERE DISASTER_ID = ?) " +
-                                  "OR VICTIM2_ID IN (SELECT VICTIM_ID FROM VICTIM WHERE DISASTER_ID = ?)";
-                try (PreparedStatement stmt = conn.prepareStatement(familySql)) {
-                    stmt.setInt(1, disasterId);
-                    stmt.setInt(2, disasterId);
-                    stmt.executeUpdate();
-                }
+
 
                 // Delete Victims
                 try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM VICTIM WHERE DISASTER_ID = ?")) {

@@ -10,6 +10,7 @@ public class MainDashboard extends JFrame {
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private List<JButton> navButtons;
+    private VictimPanel victimPanel;
 
     public MainDashboard(String username) {
         this.username = username;
@@ -58,7 +59,9 @@ public class MainDashboard extends JFrame {
 
         // Add all panels to the CardLayout
         contentPanel.add(new DisasterPanel(), "Disaster Setup");
-        contentPanel.add(new VictimPanel(), "Victim Management");
+        victimPanel = new VictimPanel();
+        contentPanel.add(victimPanel, "Victim Management");
+        contentPanel.add(new VictimSearchPanel(), "Victim Search");
         contentPanel.add(new WorkerPanel(), "Worker Directory");
         contentPanel.add(new MedicalPanel(), "Medical Records");
         contentPanel.add(new LocationPanel(), "Locations");
@@ -144,9 +147,9 @@ public class MainDashboard extends JFrame {
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(200, 200, 200)));
 
         String[] tabs = {
-            "Disaster Setup", "Victim Management", "Worker Directory", 
-            "Medical Records", "Locations", "Supply Inventory", 
-            "Inquirer Matcher", "Match Registry"
+            "Disaster Setup", "Victim Management", "Victim Search",
+            "Worker Directory", "Medical Records", "Locations", 
+            "Supply Inventory", "Inquirer Matcher", "Match Registry"
         };
 
         sidebar.add(Box.createVerticalStrut(5));
@@ -189,6 +192,11 @@ public class MainDashboard extends JFrame {
 
     private void switchTab(String name, JButton activeBtn) {
         cardLayout.show(contentPanel, name);
+        
+        // Auto-refresh logic for specific panels
+        if ("Victim Management".equals(name)) {
+            victimPanel.loadLocations();
+        }
         
         // Reset all buttons
         for (JButton btn : navButtons) {

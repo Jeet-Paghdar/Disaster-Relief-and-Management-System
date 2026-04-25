@@ -9,7 +9,7 @@ import java.util.List;
 
 public class InquirerDAO {
 
-    public boolean findAndMatchVictim(String inquirerFirst, String inquirerLast, String inqPhone, String inqGender,
+    public boolean findAndMatchVictim(String inquirerFirst, String inquirerLast, String inqPhone, String inqGender, java.sql.Date inqDob,
             String victimFirst, String victimLast, String victimPhone, String relationStr) throws SQLException {
         // 1. Check if the Victim exists First (Case-Insensitive Search + Unique Phone)
         String findVictimSql = "SELECT p.PERSON_ID as p_id, v.VICTIM_ID as v_id FROM PERSON p JOIN VICTIM v ON p.PERSON_ID = v.VICTIM_ID "
@@ -54,12 +54,13 @@ public class InquirerDAO {
 
                 if (inquirerId == -1) {
                     // Person does not exist at all — create a new PERSON record
-                    String addPersonSql = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, PHONE_NUMBER, GENDER) VALUES (?, ?, ?, ?)";
+                    String addPersonSql = "INSERT INTO PERSON (FIRST_NAME, LAST_NAME, PHONE_NUMBER, GENDER, DOB) VALUES (?, ?, ?, ?, ?)";
                     try (PreparedStatement stmt = conn.prepareStatement(addPersonSql, Statement.RETURN_GENERATED_KEYS)) {
                         stmt.setString(1, inquirerFirst);
                         stmt.setString(2, inquirerLast);
                         stmt.setString(3, inqPhone);
                         stmt.setString(4, inqGender);
+                        stmt.setDate(5, inqDob);
                         stmt.executeUpdate();
                         try (ResultSet rs = stmt.getGeneratedKeys()) {
                             if (rs.next())

@@ -43,6 +43,9 @@ public class InquirerPanel extends JPanel {
         txtInquirerPhone.setPreferredSize(fieldSize);
         JComboBox<String> comboInquirerGender = new JComboBox<>(new String[]{"Male", "Female", "Other", "Unknown"});
         comboInquirerGender.setPreferredSize(fieldSize);
+        JTextField txtInquirerDob = new JTextField();
+        txtInquirerDob.setPreferredSize(fieldSize);
+        txtInquirerDob.setToolTipText("YYYY-MM-DD");
 
         // Victim Fields
         JTextField txtVictimFirst = new JTextField();
@@ -76,14 +79,21 @@ public class InquirerPanel extends JPanel {
         gbc.gridx = 3;
         formContainer.add(comboInquirerGender, gbc);
 
+        // Row 3: Inquirer DOB
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        formContainer.add(new JLabel("DOB (YYYY-MM-DD):"), gbc);
+        gbc.gridx = 1;
+        formContainer.add(txtInquirerDob, gbc);
+
         // Separator logic
         JSeparator sep = new JSeparator(JSeparator.HORIZONTAL);
-        gbc.gridy = 3; gbc.gridx = 0; gbc.gridwidth = 4; gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridy = 4; gbc.gridx = 0; gbc.gridwidth = 4; gbc.fill = GridBagConstraints.HORIZONTAL;
         formContainer.add(sep, gbc);
 
-        // Row 4: Victim Name
+        // Row 5: Victim Name
         gbc.fill = GridBagConstraints.NONE; gbc.gridwidth = 1;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridx = 0; 
         formContainer.add(new JLabel("Victim First Name:"), gbc);
         gbc.gridx = 1; 
@@ -93,8 +103,8 @@ public class InquirerPanel extends JPanel {
         gbc.gridx = 3; 
         formContainer.add(txtVictimLast, gbc);
 
-        // Row 5: Victim Details
-        gbc.gridy = 5;
+        // Row 6: Victim Details
+        gbc.gridy = 6;
         gbc.gridx = 0; 
         formContainer.add(new JLabel("Victim Phone:"), gbc);
         gbc.gridx = 1; 
@@ -104,7 +114,7 @@ public class InquirerPanel extends JPanel {
         gbc.gridx = 3; 
         formContainer.add(comboRelation, gbc);
 
-        // Row 6: Buttons
+        // Row 7: Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         btnPanel.setBackground(Color.WHITE);
         
@@ -121,7 +131,7 @@ public class InquirerPanel extends JPanel {
         btnPanel.add(btnUpdateMatch);
         btnPanel.add(btnDeleteInquirer);
 
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 4;
+        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 4;
         gbc.insets = new Insets(15, 10, 5, 10);
         formContainer.add(btnPanel, gbc);
 
@@ -166,6 +176,7 @@ public class InquirerPanel extends JPanel {
             String iLast = txtInquirerLast.getText().trim();
             String iPhone = txtInquirerPhone.getText().trim();
             String iGender = (String) comboInquirerGender.getSelectedItem();
+            String iDobStr = txtInquirerDob.getText().trim();
             String vFirst = txtVictimFirst.getText().trim();
             String vLast = txtVictimLast.getText().trim();
             String vPhone = txtVictimPhone.getText().trim();
@@ -178,9 +189,19 @@ public class InquirerPanel extends JPanel {
                 return;
             }
 
+            java.sql.Date iDob = null;
+            if (!iDobStr.isEmpty()) {
+                try {
+                    iDob = java.sql.Date.valueOf(iDobStr);
+                } catch (IllegalArgumentException ex) {
+                    JOptionPane.showMessageDialog(this, "Invalid DOB format. Please use YYYY-MM-DD.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+
             try {
                 boolean matched = inquirerDAO.findAndMatchVictim(
-                        iFirst, iLast, iPhone, iGender, 
+                        iFirst, iLast, iPhone, iGender, iDob,
                         vFirst, vLast, vPhone,
                         (String) comboRelation.getSelectedItem()
                 );

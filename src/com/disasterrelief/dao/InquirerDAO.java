@@ -152,15 +152,16 @@ public class InquirerDAO {
         }
     }
 
-    public void updateInquirerById(int inquirerId, String newFirst, String newLast, String newPhone, String newGender)
+    public void updateInquirerById(int inquirerId, String newFirst, String newLast, String newPhone, String newGender, java.sql.Date newDob)
             throws SQLException {
-        String sql = "UPDATE PERSON SET FIRST_NAME=?, LAST_NAME=?, PHONE_NUMBER=?, GENDER=? WHERE PERSON_ID = ?";
+        String sql = "UPDATE PERSON SET FIRST_NAME=?, LAST_NAME=?, PHONE_NUMBER=?, GENDER=?, DOB=? WHERE PERSON_ID = ?";
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, newFirst);
             stmt.setString(2, newLast);
             stmt.setString(3, newPhone);
             stmt.setString(4, newGender);
-            stmt.setInt(5, inquirerId);
+            stmt.setDate(5, newDob);
+            stmt.setInt(6, inquirerId);
             stmt.executeUpdate();
         }
     }

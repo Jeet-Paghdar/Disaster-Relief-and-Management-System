@@ -138,7 +138,7 @@ public class InquirerPanel extends JPanel {
         add(formContainer, BorderLayout.NORTH);
 
         // --- CENTER: Data Table ---
-        String[] columns = {"ID", "First Name", "Last Name", "Phone", "Gender", "Inquiry Date"};
+        String[] columns = {"ID", "First Name", "Last Name", "Phone", "Gender", "DOB", "Inquiry Date"};
         tableModel = new javax.swing.table.DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -165,6 +165,8 @@ public class InquirerPanel extends JPanel {
                     txtInquirerPhone.setText(phoneObj != null ? phoneObj.toString() : "");
                     Object genderObj = tableModel.getValueAt(row, 4);
                     if (genderObj != null) comboInquirerGender.setSelectedItem(genderObj.toString());
+                    Object dobObjTable = tableModel.getValueAt(row, 5);
+                    txtInquirerDob.setText(dobObjTable != null ? dobObjTable.toString() : "");
                 }
             }
         });
@@ -228,7 +230,7 @@ public class InquirerPanel extends JPanel {
             dialog.setLayout(new BorderLayout());
             dialog.setLocationRelativeTo(this);
 
-            JPanel form = new JPanel(new GridLayout(4, 2, 10, 10));
+            JPanel form = new JPanel(new GridLayout(5, 2, 10, 10));
             form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
             String oldFirst = tableModel.getValueAt(row, 1).toString();
@@ -244,10 +246,14 @@ public class InquirerPanel extends JPanel {
             Object genderObj = tableModel.getValueAt(row, 4);
             if (genderObj != null) updateGender.setSelectedItem(genderObj.toString());
 
+            Object oldDobObj = tableModel.getValueAt(row, 5);
+            JTextField updateDob = new JTextField(oldDobObj != null ? oldDobObj.toString() : "");
+
             form.add(new JLabel("First Name:")); form.add(updateFirst);
             form.add(new JLabel("Last Name:")); form.add(updateLast);
             form.add(new JLabel("Phone:")); form.add(updatePhone);
             form.add(new JLabel("Gender:")); form.add(updateGender);
+            form.add(new JLabel("DOB (YYYY-MM-DD):")); form.add(updateDob);
 
             dialog.add(form, BorderLayout.CENTER);
 
@@ -265,15 +271,26 @@ public class InquirerPanel extends JPanel {
                 String newLast = updateLast.getText().trim();
                 String phone = updatePhone.getText().trim();
                 String gender = (String) updateGender.getSelectedItem();
+                String dobStr = updateDob.getText().trim();
 
                 if (newFirst.isEmpty() || newLast.isEmpty()) {
                     JOptionPane.showMessageDialog(dialog, "First Name and Last Name are required.");
                     return;
                 }
 
+                java.sql.Date sqlDob = null;
+                if (!dobStr.isEmpty()) {
+                    try {
+                        sqlDob = java.sql.Date.valueOf(dobStr);
+                    } catch (IllegalArgumentException ex) {
+                        JOptionPane.showMessageDialog(dialog, "Invalid DOB format. Please use YYYY-MM-DD.");
+                        return;
+                    }
+                }
+
                 try {
                     int inquirerId = (int) tableModel.getValueAt(row, 0);
-                    inquirerDAO.updateInquirerById(inquirerId, newFirst, newLast, phone, gender);
+                    inquirerDAO.updateInquirerById(inquirerId, newFirst, newLast, phone, gender, sqlDob);
                     JOptionPane.showMessageDialog(dialog, "Inquirer Profile Updated Successfully!");
                     dialog.dispose();
                     loadTableData();
@@ -342,6 +359,7 @@ public class InquirerPanel extends JPanel {
                         inq.getLastName(),
                         inq.getPhoneNumber(),
                         inq.getGender(),
+                        inq.getDob(),
                         inq.getInquiryDate()
                 });
             }
